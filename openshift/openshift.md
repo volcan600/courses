@@ -63,19 +63,73 @@ Using StorageClass
 Need to check again
 
 ## 4.5 Using ConfigMap
-kubectl create cm myconf --from-file=my.conf
+* ConfigMaps are used to decouple information
+* Different types of information can be stored in ConfigMaps
+  * Command line parameters
+  * Variables
+  * ConfigFiles
 
-kubectl create cm variables --from-env-file=variables
-
-kubectl create cm special --from-literal=VAR3=cow --from-literal=VAR4=goat
-
-kubectl describe cm <cmname>
-
+### Commands
 Use --from-file to put the contents of a configuration file in the ConfigMap
+```kubectl create cm myconf --from-file=my.conf```
 
 Use --from-env-file to define variables
+```kubectl create cm variables --from-env-file=variables```
 
 Use --from-literal to define variables or command line arguments
+```kubectl create cm special --from-literal=VAR3=cow --from-literal=VAR4=goat```
+
+```kubectl describe cm <cmname>```
+
+### Demo One
+oc create cm variables --from-env-file=/variables
+
+oc describe variables
+
+### Demo Two
+kubectl create cm special --from-literal=VAR3=cow --from-literal=VAR4=goat
+
+oc get cm morevars
 
 oc get cm morevars -o yaml
 
+### Demo Three
+oc create cm nginx-cm --from-file nginx-custom-config.conf
+
+oc describe cm nginx-cm
+
+cat nginx-cm.yaml
+
+oc create -f nginx-cm.yaml
+
+oc exec -it nginx cm -- /bin/bash
+
+## 4.6 Using the Local Storage Operator
+Install localstorage on OperatorHub
+
+oc get all -n openshift-local-storage
+
+Need to create storage device 
+```
+cd ~/.crc/machines/crc
+
+ssh -i id_ecdsa core@$(crc ip)
+
+sudo -i
+
+cd /mnt/
+
+dd if=/dev/zero of=loopbackfile bs=1M count=1000
+
+losetup -fP loopbackfile
+
+ls -l /dev/loop0
+```
+
+cat localstorage.yml
+
+oc create -f localstorage.yml
+
+oc get all -n openshift-local-storage
+
+oc get sc
