@@ -64,11 +64,15 @@ Need to check again
 
 ## 4.5 Using ConfigMap
 kubectl create cm myconf --from-file=my.conf
+
 kubectl create cm variables --from-env-file=variables
-kubectl create cm special --from-literal=VAR3=cow --from-literal=VAR4=goat 
+
+kubectl create cm special --from-literal=VAR3=cow --from-literal=VAR4=goat
+
 kubectl describe cm <cmname>
 
 Use --from-file to put the contents of a configuration file in the ConfigMap
+
 Use --from-env-file to define variables
 Use --from-literal to define variables or command line arguments
 
