@@ -526,6 +526,6 @@ oc get rolebinding -o wide
 ```
 
 ```bash
-oc adm policy add-cluster-role-to-group --rolebinding self-provisioners self-provisioner system:authenticated:oauth
+oc adm policy add-cluster-role-to-group --rolebinding-name self-provisioners self-provisioner system:authenticated:oauth
 ```
 
