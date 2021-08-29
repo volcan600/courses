@@ -1,33 +1,34 @@
-apiVersion: config.openshift.io/v1
-kind: OAuth
+apiVersion: v1
+items:
+- apiVersion: config.openshift.io/v1
+  kind: OAuth
+  metadata:
+    annotations:
+      include.release.openshift.io/ibm-cloud-managed: "true"
+      include.release.openshift.io/self-managed-high-availability: "true"
+      include.release.openshift.io/single-node-developer: "true"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"config.openshift.io/v1","kind":"OAuth","metadata":{"annotations":{},"name":"cluster"},"spec":{"identityProviders":[{"htpasswd":{"fileData":{"name":"htpass-secret"}},"mappingMethod":"claim","name":"developer","type":"HTPasswd"}],"templates":{"login":{"name":"login-template"}},"tokenConfig":{"accessTokenMaxAgeSeconds":0}}}
+      release.openshift.io/create-only: "true"
+    creationTimestamp: "2021-08-10T05:01:48Z"
+    generation: 2
+    name: cluster
+    resourceVersion: "21771"
+    uid: d7c8d29a-a496-472e-8e6c-4f8b8229c2ec
+  spec:
+    identityProviders:
+    - htpasswd:
+        fileData:
+          name: localusers
+      mappingMethod: claim
+      name: developer
+      type: HTPasswd
+    templates:
+      login:
+        name: login-template
+    tokenConfig:
+      accessTokenMaxAgeSeconds: 0
+kind: List
 metadata:
-  creationTimestamp: "2020-12-03T12:17:01Z"
-  generation: 2
-  managedFields:
-  - apiVersion: config.openshift.io/v1
-    fieldsType: FieldsV1
-    fieldsV1:
-      f:spec: {}
-    manager: cluster-version-operator
-    operation: Update
-    time: "2020-12-03T12:17:01Z"
-  - apiVersion: config.openshift.io/v1
-    fieldsType: FieldsV1
-    fieldsV1:
-      f:spec:
-        f:identityProviders: {}
-    manager: kubectl-client-side-apply
-    operation: Update
-    time: "2020-12-04T13:12:08Z"
-  name: cluster
-  resourceVersion: "52694"
-  selfLink: /apis/config.openshift.io/v1/oauths/cluster
-  uid: 14d07b5f-3ad7-458a-b794-c7b99bc9fbb2
-spec:
-  identityProviders:
-  - htpasswd:
-      fileData:
-        name: htpasswd-secret
-    mappingMethod: claim
-    name: htpass-users
-    type: HTPasswd
+  resourceVersion: ""
+  selfLink: ""
