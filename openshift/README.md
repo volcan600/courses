@@ -529,3 +529,233 @@ oc get rolebinding -o wide
 oc adm policy add-cluster-role-to-group --rolebinding-name self-provisioners self-provisioner system:authenticated:oauth
 ```
 
+## 6.2 Managing Access Control
+
+##### Creating Roles
+* New roles can be created by assigning verbs and resources to the newly created role
+* **oc create role podview --verb=get --resource=pod -n userstuff**
+* **oc adm policy add-role-to-user podview ahmed --role-namespace=userstuff -n userstuff**
+* **oc create clusterrole podviewonly --verb=get --resource=pod**
+* **oc adm policy add-cluster-role-to-user podviewonly lori**
+
+###### Demo
+```bash
+# Create the namespace as admin if it is not created
+oc create role podview --verb=get --resource=pod -n userstuff
+```
+
+```bash
+# Allow linda user to view pods in userstuff namespace
+oc adm policy add-role-to-user podview linda --role-namespace=userstuff -n userstuff
+```
+
+```bash
+# Create role to assigned to the entire cluster
+oc create clusterrole podviewonly --verb=get --resource=pod
+```
+
+```bash
+# Assign pod view for lori in the entire cluster
+oc adm policy add-cluster-role-to-user podviewonly lori
+```
+
+## 6.3 Using Secrets to Manage Sensitive Information
+
+##### Understanding Secrets
+* A secret is a base64 encoded ConfigMap
+* To really protect data in secret, the Etcd can be encrypted
+* Secrets are commonly used to decouple configuration and data from the applications runing in OpenShift
+* Using secrets allows OpenShift to load site-specific data from external sources
+* Secrets can be used to store different kind of data
+  * Passwords
+  * Sensitive configuration files
+  * Credentials such as SSH Keys or OAuth tokens
+
+##### Understanding Secret Types
+* Different types of secrets exist:
+  * docker-registry
+  * generic
+  * tls
+* When information is stored in a secret, OpenShift validates that the data conforms to the type of secret
+* In OpenShift, secrets are mainly used for two reasons
+  * To store credentials which is used by Pods in a MicroService architecture
+  * To store TLS certificates and keys
+  * A TLS secret stores the certificate as tls.crt and the certificate key as tls.key
+  * Developers can mount the secret as a volume and create a pass-through route to the application
+
+##### Creating Secrets
+* Generic secrets: **oc create secret generic secretvars --from-literal user=root --from-literal password=verysecret**
+* Generic secrets, containing SSH keys: **oc create secret generic ssh-keys --from-file id_rsa=\~/.ssh/id_rsa --from-file 
+id_rsa.pub=\~/.ssh/id_rsa.pub**
+* Secrets containing TLS certificate and key: **oc create secret tls secret-tls --cert certs/tls.crt kets/tls.key**
+
+##### Exposing Secrets to Pods
+* Secrets can be referred to as variables, or as files from the Pod
+* Use **oc set env** to write the environment variables obtained from a secret to a pod or deployment
+  * **oc set env deployment/mysql --from secret/mysql --prefix MYSQL_**
+* Use  **oc set volume** to mount secrets as volumes
+* Notice that when using **oc set volume**, all files currently in the target directory are not longer accesible.
+  * **oc volume deployment/mysql --add --type secret --mount-path /run/secrets/mysql --secret-name mysql**
+* Notice that **oc set env** can use **--prefix** to add a prefix to the environment variables defined in the secret
+
+###### Demo
+
+```bash
+oc create secret generic mysql --from-literal user=sqluser --from-literal password=password --from-literal database=secretdb --from-literal hostaname=mysql --from-literal root_password=password
+```
+
+```bash
+oc new-app --name mysql --docker-image bitnami/mysql
+```
+
+```bash
+oc logs \<podname\>
+```
+
+```bash
+# Read variables from secrets, all variables is under MYSQL_
+oc set env deployment/mysql --from secret/mysql --prefix MYSQL_ 
+```
+
+```bash
+# Verify environment options used with secret
+oc exec -it \<podname\> -- env
+```
+
+## 6.4 Creating ServiceAccounts
+
+##### Understating ServiceAccounts
+* A ServiceAccount (SA) is a user account that is used by Pod to determine Pod access privileges to system resources
+* The default ServiceAccount used by Pods allows for very limited access to cluster resources
+* Sometimes a Pod cannot run with this very restricted ServiceAccount
+* After creating the ServiceAccount, specific access privileges need to be set
+
+##### Configuring ServiceAccount Access Restrictions
+* To create a Service Account, use **oc create serviceaccount mysa**
+* Optionally, add **-n namespace** to assign the SA to a specific namespace
+* After creating the SA, use a role binding to connect the SA to a specific Security Context Constraint (see lesson 6.5)
+
+###### Demo
+
+```bash
+# Look up "serviceAccount: and serviceAccountName:"
+oc get pod mypod -o yaml
+```
+
+```bash
+oc create sa newsa 
+```
+
+```bash
+oc get sa
+```
+
+## 6.5 Managing Security Context Constraints
+
+##### Understanding Security Context Constraints
+* A Security Context Constraint (SCC) is an OpenShift resource, similar to the Kubernetes Security Context resources, that restricts access to resources
+* The purpose is to limit access from a Pod to the host environment
+* Different SCCs are available to control:
+  * Running privileged containers
+  * Requesting additional capabilities to a container
+  * Using hosts directories as volumes
+  * Changing SELinux context of a container
+  * Changing the user ID
+* Using SCCs may be necessary to run community containers that by default don't work under the tight OpenShift security restrictions
+
+##### Exploring SCCs
+* Use **oc get ssc** for an overview of SCCs
+* For more details, use **oc describe scc \<name\>**, as in **oc describe scc nonroot**
+* Use **oc describe pod \<podname\> | grep scc** to see which SCC is currently used by Pod
+* If a Pod can't run due to an SCC use **oc get pod \<name\> -o yaml | oc adm policy scc-subject-review -f -**
+* To change a container ro run with a different SCC, you must create a service account and use that in the Pod
+
+
+
+###### Demo One
+
+```bash
+oc new-project scctest
+```
+
+```bash
+oc get scc
+```
+
+```bash
+oc describe scc nonroot
+```
+
+```bash
+# It will failed since it requires root privileges
+oc run nginx --image=nginx
+```
+
+```bash
+oc get pod nginx -o yaml | oc adm policy scc-subject-review -f -
+```
+
+##### Using SCCs
+* **oc get scc** gives an overview of all SCCs
+* **oc describe scc anyuid** shows information about a specific SCC
+* **oc describe pod** shows a line openshift.oi/scc: restricted; most Pods runs as restricted
+* Some Pods require access beyond the scope of their own containers, such as S21 Pods. To provide this access, SAs are needed
+* To change the container to run using a different SCC, you need to create a service account and used that with Pod or Deployment
+
+##### Understanding SCC and ServiceAccount
+* The service account is used to connect to an SCC
+* Once the service account is connected to the SCC it can be bound to a deployment or pod to make sure that it is working
+* This allows you for instance to run a Pod that requires root access to use the anyuid SCC so that it can run anyway
+
+###### Demo Two, Using SCCs
+* As linda user: **oc new-project sccs**
+* **oc new-app --name sccnginx --docker-image nginx**
+* **oc get pods** will show an error
+* **oc logs pod/nginx\[Tab\]** will show that is fails beacause of a permission problem
+* as admin user: **oc get pod sccnginx\[Tab\] -o yaml | oc adm policy scc-subject-review -f -** will show which scc to use
+* as admin user: **oc create sa nginx-sa** creates the dedicated service account
+* As administrator: **oc adm policy add-scc-to-user anyuid -z nginx-sa**
+* As linda: **oc set serviceaccount deployment sccnginx nginx-sa**
+* **oc get pods sccs\[Tab\] -o yaml**; look for a service account
+* **oc get pods** should show the pod as running(may have to wait a minute)
+
+## 6.6 Running Container as Non-root
+* By default, OpenShift denies containers to run as root
+* Many containers run as root by default
+* A container that runs as root has root privileges on the container hosts as well, and should be avoided
+* If you build your own container images, specify which user it should run
+* Frequently, non-root alternatives are available for the images you're using
+  * quay.oi images are made with OpenShift in mind
+  * bitnami has reworked common images to be started as non-root
+
+##### Managing Non-root Container Ports
+* Non-root containers cannot bind to a privileged port
+* In OpenShift, this is not an issue, as containers are accessed through services an routes
+* Configure the port on the service/route, not on the Pod
+* Also, non-root containers will have limitations accessing files
+
+##### Demo: Runing Bitnami non-root Nginx
+
+```bash
+oc new-app --docker-image=bitnami/nginx:latest --name=bginx
+```
+
+```bash
+oc get pods -o wide
+```
+
+```bash
+oc describe pods bginx
+```
+
+```bash
+oc get services
+```
+
+## Lesson 6 Lab: Fixing Application Permissions
+* Use **oc run mynginx --image=nginx** to run an Nginx webserver Pod
+* It fails. Fix it
+
+```bash
+
+```
