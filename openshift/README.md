@@ -1896,3 +1896,4 @@ oc get co >> /tmp/health.txt
 oc get clusterversion >> /tmp/health.txt
 ```
 
+ 
