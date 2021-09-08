@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: jenkins/jenkins:lts-jdk11
+        #image: jenkins/jenkins:lts-jdk11
+        image: my-jenkins-image:1.1
         ports:
         - containerPort: 8080
         volumeMounts:
