@@ -193,6 +193,11 @@ ssh root@worker-3
 # Copy the content from the file and copy to the terminal
 ```
 
+```bash
+# Check the nodes recently added in status "Ready"
+kubectl get nodes
+```
+
 ### 3.4 Understanding kubectl Client Configuration
 * Client configurationis built from the cluster /etc/kubernetes/admin.con and copied ~/.kube/config
 * Different components are defined in the admin.conf
@@ -205,4 +210,16 @@ ssh root@worker-3
 ```bash
 # It is good idea use -h option for help
 kubectl config -h 
+```
+
+```bash
+# It is the almost the same than check the file difectly "cat ./.kube/config". The first just ommit some data
+# Important: the second command is to check using the local user
+kubectl config view
+cat ./.kube/config
+```
+
+```bash
+# If any problem with the local user, you can always export the admin.conf to ~/.kube/config file
+sudo cat /etc/kubernetes/admin.conf
 ```
