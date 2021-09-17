@@ -1148,6 +1148,213 @@ oc start-build simple
 oc get all
 ```
 
+### 10.1 Understanding OpenShift Troubleshooting
+* OpenShift troubleshooting is happening in different areas
+  * Authentication and authorization
+  * Running Applications
+  * Creating Applications with S2I
+  * Accessing Applications
+
+### 10.2 Troubleshooting OpenShift Authentication and Authorization
+* OpenShift uses advanced Role Based Access Control (RBAC)
+* To set up granular access to application resources, an authentication provider needs to be set up, then RBAC-based authentication needs to be configured
+* By default, most OpenShift environments use the kubernetes user accounts, which consits of trusted TLS certificates
+  * **kubeadmin** is the cluster administrator with access to everything
+  * **developer** is the limited permissions user
+* if you get access denived messages, check current credentials using **oc whoami**
+
 ```bash
-!cur
+# To print credentials for code ready containers
+# It is not a command for real OpenShift environments
+crc console --crendentials
 ```
+
+```bash
+# Shortcut for namespaces
+oc get ns
+```
+
+### 10.3 Troubleshooting OpenShift Application Startup
+
+#### Understanding OpenShift App Troubleshooting
+* To troubleshoot OpenShift applications, you should follow the flow of the application
+ * First, the resources are committed to the etcd database
+ * Next, the container entrypoint application is started
+* To follow this flow, use the following commands:
+  * **oc describe** allows your to follow the procedure of how resources are added to the etcd
+  * **oc logs** shows STDOUT of the default application
+
+#### Troubleshooting CrashLoopback
+* **oc describe** may give CrashLoopback off errors
+* This is a generic error which needs further investigation
+* In some cases, the error is caused by an application error
+* In other cases, it's result of trying to start a non-daemon application
+* It can also be related to the fact that OpenShift, by default, runs rootless images
+
+#### Understanding Rootless Images
+* Many docker.io images are designed to run as root
+* OpenShift runs images as non-root by default
+* Easy ways to avoid rootless image issues
+  * Don't use Docker images, but user quay.io images
+  * Check out the bitnami images
+* Alternatively, consider adding permissions to run root images using ServiceAccount
+  * Setting up ServiceAccount with RBAC is covered in the EX280 course
+  * As a generic solution, try using **oc adm policy add-scc-to-user anyuid -z default**
+
+#### Troubleshooting Storage Access
+* A pod might not be able to access persistent volumes that have been used previously
+* If a PVC still uses the PV, it will show a status of bound
+* To release this, use **oc delete pv**, and create the PV again, using the same specifications
+* Before deleting existing resources, don't forget to capture the current state using **-o yaml > somefile.yaml**
+
+#### Troubleshooting Images
+* When applications are started, images are created
+* Old, unused images may prevent you from pulling newer version of the images
+* Use **oc adm prune** as an automated way to remove obsolete images and other resources
+
+#### Demo time for images
+```bash
+# As admin
+oc adm prune
+```
+
+```bash
+oc adm prune images
+```
+
+```bash
+oc adm prune builds
+```
+
+```bash
+# without confirm option it will run as driven
+oc adm prune builds --confirm
+```
+
+### 10.4 Troubleshooting Running Applications
+
+#### Analyzing OpenShift Events
+* **oc get events** gives an overview of cluster-level events
+* This allows you to trace what happens when an application is started in the cluster
+* For individual resource events, use **oc describe** on the specific resource
+
+#### Accesing Running Containers
+* Sometimes, **oc logs** doesn't show all the required information
+* **oc exec** can be used to access a runing contaienr, which allows you to investigate the runtime environment of the main application
+* Use **oc exec -it podname -- /bin/bash** to open a bash shell in a interactive container terminal
+
+#### Using Essential Troubleshooting Binaries
+* Container images are often designed in a minimal way
+* To access essential binaries, you may consider including them in your Dockerfile
+  * Ensure the Dockerfile uses **yum install -y iputils procps-ng** for access to **ip** and **ps**
+  * Alternatively, consider bind-mouting the host bin directory while starting the container: **sudo podman run -it -v /bin:/bin nginx /bin/bash** will run the container with an interactive shell and access to all utilities in /bin on the host
+* Accessing host binaries in OpenShift requires creating of a hostPath pyshical volume that exposes access to all required directories
+
+#### Transferring Files to and From Containers
+* **podman cp** and **oc cp** can be used to copy files to and from running containers
+  * **sudo podman cp my.conf mycontainer:/opt/myapp/**
+  * **oc cp mypod:/opt/myapp/my.conf .**
+* As an alternative (but more complex) way to copy files to and from containers, you may mount volumes withing the container
+
+#### Pro Tip!
+```bash
+# When you need to exec a pod
+oc exec -it nginx -- sh
+```
+
+```bash
+# Some useful command for troubleshooting are not installed
+# Use the path to figure out process or other information
+# /etc/proc
+# All directoires with a number are followed by cmdline
+cat /etc/proc/26/cmdline
+```
+
+> Notes: Now, if you use oc exec, oc exec on a running container does not overwrite the entry point and for that reason it's safe to use exit without exiting the container. If you have started to container with a shell instead of the default entry point and you want to keep it running then you better use control P control Q to detach from the container.
+
+### 10.5 Troubleshooting S2I
+* S2I consists of two main steps
+  * Build: this is where software is compiled and the resulting image is pushed to the OpenShift registry using BuildConfig resource
+  * Deployment: this is where the deployment is started from the image that has been pushed to the OpenShift registry
+* Troubleshooting S2I starts by indentifying where exactly the problems occur
+* If the issue occurs while building, analyze the build Pod logs
+* If the issue occurs later, normal rules of OpenShift troubleshooting apply
+* Consider using OpenShift console, where the logs can be accessed easily from the web interface
+
+#### Restarting Failed builds
+* If a build process has failed, use **oc start-build <application-name>** to start again
+* This will spawn a new Pod with the build process
+
+#### Troubleshooting Build Permissions
+* While running source code on top of UBI 8 images, permissions and SELinux issues may arise
+* Check USER statement in Dockerfile to find out which user account is used
+* Ensure this user has sufficient permissions on directories that are accessed
+* SELinux may be an issue as well if host based storage is mounted in a container, use the following on the host folder to ensure SELinux is set correctly
+  * **semange fcontext -a -t container_file_t/hostfolder(/.\*)?** sets appropriate permissions
+  * **restorecon -R /hostfolder** will apply these permissions
+
+### 10.6 Troubleshooting Application Access
+
+#### Using Container Port Forwarding
+* When applications are not normally reachable, stop it in OpenShift and use podman port forwarding to expose a port on the node where the container is running: **sudo podman run --name mydb -p 33060:3306 mysql**
+* OpenShift can do port forwarding as well, to expose a port on the computer where the **oc** client is used: **oc port-forward mydb 33060 3306**
+  * Notice that this port forwarding requires you to leave the terminal where you started the port forwarding open
+  * This methid offer the advantage that it can be done also after the container has been started
+
+#### Troubleshooting Application Access
+* Beacause of the way OpenShift SND is organized, access problems may occur at different levels
+* To troubleshoot application access issues, use the following steps
+  * Use **oc describe pod** to find the port on which the application is offering service
+  * Use **oc get pods -o wide** to find the Pod IP address, and from the node that runs the Pod, connect to it directly (requires SSH access to the node)
+  * Use the NodePort serviceaccount type, and connect to the port that is exposed on the node that runs the Pod
+  * Create a route, and access the route URL
+    * Make sure this URL can be resolved using DNS, it may require manually adding a line to ./etc/hosts
+
+### Lesson 10: Troubleshooting Applications
+* Create an application based on lab10.yaml in the course Git repository at https://github.com/sandervanvugt/ex180
+* Analyze what is wrong with this application and fix it
+
+#### Solution
+<details>
+  <summary>Lab 10 solution</summary>
+
+    ```bash
+    git clone https://github.com/sandervanvugt/ex180
+    ```
+
+    ```bash
+    oc create -f lab10.yaml
+    ```
+
+    ```bash
+    oc get all
+    ```
+
+    ```bash
+    oc expose svc nginx
+    ```
+
+    ```bash
+    oc get routes
+    ```
+
+    ```bash
+    curl <resultOfTheroute>
+    ```
+
+    ```bash
+    oc describe pod <namePod>
+    ```
+
+    ```bash
+    oc describe svc
+    ```
+
+    ```bash
+    oc get deploy --show-labels
+    ```
+
+    ```bash
+    oc edit svc <serviceName>
+    ```
+</details>
