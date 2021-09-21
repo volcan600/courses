@@ -223,3 +223,120 @@ cat ./.kube/config
 # If any problem with the local user, you can always export the admin.conf to ~/.kube/config file
 sudo cat /etc/kubernetes/admin.conf
 ```
+
+### 4.1 Understanding the Kubernetes API
+* Kubernetes has not one API, but a collection of APIs that define the objects and services that can be used in kubernetes
+* API groups can be addressed to find out which version is available
+* The APIs are RESTful, which means that information from the API can be obtained using commands like **curl**
+
+#### Controlling API Access
+* API access is regulated by using RBAC
+* In RBAC, user accounts are idenfied as a set of certificates associated to a name, defined in ~/.kube/config
+* Use **kubectl auth can-i** to verify what you can do with current credentials
+  * **kubectl auth can-i create deployments**
+  * **kubectl auth can-i create pods --as linda**
+  * **kubectl auth can-i create pods --as linda --namespace apps**
+
+### 4.2 Understanding Core Kubernetes Objects
+
+
+### 4.3 Using option to Explore the API
+
+#### Options for Accessing the API
+* **kubectl api-resources** will show API groups and resources within the APIs
+* After running **kubectl proxy**, you can also use curl to explore group information
+  * **curl http://localhost:8001/apis**
+* **kubectl api-versions** will show current API versions
+* **kubectl explain** can be used to explore API components
+
+### 4.4 Using kubectl to Manage API Objects
+
+#### Using kubectl
+* The **kubectl** command is the default command to interface the API
+* Use **kubectl cluster-info** as first test of its working
+* Current configuration is stored in \~/.kube.config
+* Use **kubectl config view** to view the current config
+* Multi-cluster access is possible, but a bit complicated, see https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-cluster for more details
+
+#### Enabling Shell Autocompletion
+* Depending on how you installed kubernetes, **kubectl** bash completion may not present by default
+* Install the **bash-completion** package first
+* Next, enable **kubectl completion bash** using **kubectl completion bash >/etc/bash_completion.d/kubectl** or **kubectl completion bash >> ./bashrc**
+
+### 4.5 Using YAML Files to Define API Objects
+* **kubectl create -f busybox.yaml** creates the pod
+* **kubectl get pods** show all pods
+* **kubectl explain pods.containers.spec** It is important, **kubectl explain <name>**
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox2
+  namespace: default
+  labels:
+    app: busybox
+spec:
+  containers:
+  - name: busy
+    image: busybox
+    command:
+      - sleep
+      - "3600"
+```
+
+### 4.6 Using curl to Work with API Objects
+
+#### Accessing APIs Using curl
+* The APIs are RESTful, which means they responde to typical HTTP requests such as GET, POST and DELETE
+* This makes it easy to interact with other systems
+* If the appropriate certificates are used, the API can be addressed directly using **curl**
+  **curl --cert myuser.pem --key myuser-key.pem --cacert /root/myca.pem https://controller:6443/api/v1**
+* To make API access easy without using certificates, **kubectl proxy** can be used
+  * **kubectl proxy --port=8001 &**
+
+#### Demo: curl with API objects
+```bash
+kubectl proxy --port=8001 &
+```
+
+```bash
+curl http://localhost:8001/version
+```
+
+```bash
+curl http://localhost:8001/api/v1/namespaces/default/pods
+``` 
+
+```bash
+# Deleting pod using API
+# Use case example, interact with frontend and API
+curl -X DELETE http://localhost:8001/api/v1/namespaces/default/pods/busybox2
+```
+
+### 4.7 Using Others Commands
+
+#### Understanding etcdctl
+* The **etcdctl** command can be used to interrogate and manage the etcd database
+* Different versions of the comand exist: **etcdctl2** is to interact with v2 of the API, and **etcdctl** is version independent
+
+#### Demo: Install and use etcdctl
+
+```bash
+sudo yum update && sudo yum provides */etcdctl
+```
+
+```bash
+sudo yum install -y etcd
+```
+
+### Lesson 4 Lab: Using curl to Explore the API
+* Use **curl** to explore which Pods are present in the kube-system namespace
+
+```bash
+kubectl proxy --port=8001 &
+```
+
+```bash
+curl  http://localhost:8001/api/v1/namespaces/kube-system/pods
+```
