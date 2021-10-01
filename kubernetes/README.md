@@ -82,7 +82,7 @@ kubectl api-versions
 #### Software Installation
 * Before starting installation, you need a container runtime
 * Different runtimes are supported, in this course we'll use **docker**
-* To make installation easy, use **git clone https://github.com/sandervanvugt/cka** which provides 2 scripts
+* To make installation easy, use **git clone https://github.com/sandervanvugt/cka** and **https://github.com/sandervanvugt/kubernetes** which provides 2 scripts
   * **setup-docker.sh** installs the Docker container runtime
   * **setup-kubetools.sh** installs the kubernetes tools
 * As root, run these scripts on all nodes
@@ -120,7 +120,7 @@ sudo ./setup-kubetools.sh
 #### Starting the Cluster
 * Create the client configuration file by applying the following steps as as regular user account
   * **mkdir -p $HOME/.kube**
-  * **sudo cp -l /etc/kubernetes/admin.conf $HOME/.kube/config** 
+  * **sudo cp  /etc/kubernetes/admin.conf $HOME/.kube/config** 
   * **sudo chown $(id -u):$(id -g) $HOME/.kube/config**
 * At this point you'll have a one-node cluster that is ready to be further configured
 * Use **kubectl cluster-info** to verify
@@ -340,3 +340,403 @@ kubectl proxy --port=8001 &
 ```bash
 curl  http://localhost:8001/api/v1/namespaces/kube-system/pods
 ```
+
+### 5.1 Understanding Namespaces
+* Namesspaces are a Linux Kernel feature that is leveraged up to kubernetes level
+* Nemspaces implement stric resource separation
+* Resource limitation through quota can be implemented at a Namespace level also
+* Use namespaces to separate different customer environments within one Kubernetes cluster
+
+#### Exploring Default Namespaces
+* Four namespaces are defined when a cluster is created
+  * default: this is where all kubernetes resources are created by default
+  * kube-node-lease: an administrative namespace where node lease information is stored - may be empty and/or non-existing
+  * kube-public: a namespace that is world-readable. Generic information can be stored here, but it's often empty
+
+#### Creating Custom Namespaces
+* Namespaces can be created using YAML files, or from the command line
+* **kubectl get ns**
+* **kubectl get all --all-namespaces**
+* **kubectl create ns dev**
+* **kubectl describe ns dev**
+* **kubectl get ns dev -o yaml**
+
+### 5.2 Managing Pods and Deployments
+* Create a deployment
+  * **kubectl create deployment --image=nginx newnginx**
+  * **kubectl get all**
+  * **kubectl get deployments.apps newnginx -o yaml | less**
+  * **kubectl create deployment -h**
+  * **kubectl create deployment --dry-run --image=nginx --output=yaml demodep > newdeployment**
+
+### Managing Deployment Scalability
+* Scale replicas on deployment
+  * **kubectl scale deployment newnginx --replicas=3**
+  * **kubectl get deployments.apps**
+  * **kubectl get rs**
+* You can directly modify deployment directly in the YAML code
+  * **kubectl edit deployments.apps newnginx**
+
+
+### 5.4 Understanding Labels and Annotations
+* Use the command show all labels from deployments
+  * **kubectl get deployments --show-labels**
+* Create new label for newnginx deployment
+ * **kubectl label deployments.apps newnginx state=demo**
+ * Verify running the show labels command
+* To look for a specific label
+  * **kubectl get all deployments.apps --selector state=demo**
+
+### 5.5 Managing Rolling Updates
+* MaxSurge: Define the number of pod running after reach the max capacity
+  * Typical example, if there is 3 pods on desired pod and the maxsurge is 2. It is posible to run 5 pods
+* maxunavailable: It is how much pod can be under desired pod.
+  * if this parameter is 1. It will run two pods always
+* To check the parameters
+  * Seach strategy **kubectl get deployments.apps nginx -o yaml | less**
+  * **kubectl explain deployments.spec.strategy**
+  * **kubectl explain deployments.spec.strategy.rollingUpdate**
+
+### 5.6 Managing Deployment History
+* Check the options for rollout
+  * **kubectl rollout -h**
+
+#### Demo: rollout deployment
+* In the repo, use the rolling.yaml file
+```bash
+kubectl create -f rolling.yaml
+```
+
+* Check the number of Revision
+
+```bash
+kubectl rollout history deployment
+```
+
+* Change the nginx version to 1.15
+```bash
+kubectl edit deployments.apps rolling-nginx
+```
+
+* Verify again the number of Revision
+```bash
+kubectl rollout history deployment
+```
+
+* Show all rollout resouces
+```bash
+kubectl get all
+```
+
+* Check the nginx image running
+
+```bash
+kubectl describe deployment rolling-nginx
+```
+
+* It is possible to check revisions
+
+```bash
+kubectl rollout history deployment rolling-nginx --revision=2
+```
+
+```bash
+kubectl rollout history deployment rolling-nginx --revision=1
+```
+
+* To revert changes
+```bash
+kubectl rollout undo deployment rolling-nginx --to-revision=1
+```
+
+* Verify
+```bash
+kubectl get all 
+```
+
+
+### 5.7 Using Init Containers
+* If a Pod has 2 containers, one of them can be used as an init container. An init container can be used to prepare something and this will be done before the main application is started
+* Init containers will always run to completion, and only after it has completed successfully, will the next container start
+* Init containers are defined using the **initContainers** field in the Pod spec
+
+#### Demo: init containers
+* Find the file init1.yaml
+```bash
+kubectl create -f init1.yaml
+```
+
+* Check if it is running
+```bash
+kubectl get pods
+```
+
+* The init container will wait until acomplish its task
+```bash
+# If there is not nginx created. Run kubectl create deployment nginx --image=nginx
+kubectl expose deployment newnginx --port=80 --name=myservice
+```
+
+* Check if there is a service created
+```bash
+kubectl get svc
+```
+
+* After couple of minutes, check if the initpod container pass the init container and it is running
+```bash
+kubectl get pods
+```
+
+### 5.8 Managing StatefulSets
+
+#### Understanding StatefulSets
+* StatefulSets are like deployments, but provide guarantees about the ordering and uniqueness of Pods
+* StatefulSets maintains a unique identify for each Pod, which makes it so Pods are not interchangeable
+* StatefulSets are valuable if the application has one of the following requirements
+  * unique network identifiers
+  * stable persistent storage
+  * ordered deployment and scaling
+  * ordered automated rolling updates
+* See https://kubernetes.io/docs/concepts/workloads/controllers/statefulset for more details
+
+#### StatefulSets Limitations
+* StatefulSets have a number of limitations, and for that reason should only be used if their features are specifically required
+  * Storage must be provisioned by a PersistentVolume
+  * Deleting a StatefulSets will not delete associated storage
+  * A Headless service is required to provide network identify for Pods in a StatefulSets
+  * To ensure Pods in a StatefulSets are terminated properly, the number of Pods should be scaled down to 0 before deleting the StatefulSets
+
+* Check the stateful.yaml file
+
+### 5.9 Using DaemonSets
+
+#### Understanding DaemonSet
+* A DaemonSet ensures that all or some nodes run a copy of a Pod
+* DaemonSets are useful for services that should be running everywhere
+* As nodes are added to the cluster, Pods are added to them automatically by the DaemonSet
+* Deleting a DaemonSet will delete the Pods it created
+* DaemonSets are used in specific cases
+  * Running cluster storage daemon such as ceph or glusterd on each node
+  * Running log collection daemons on every node
+  * Running monitoring daemons such as collectd, Prometheus Node Exporter and other on each node
+
+#### Demo: Creating a DaemonSet
+
+* Take a look in the file _daemonset-fluentd.yaml_
+
+* The interesting part is when it is running
+```bash
+kubectl create -f daemonset-fluentd.yaml
+```
+
+* Check the daemon set
+```bash
+kubectl get daemonset -n kube-system
+```
+
+```bash
+kubectl get nodes
+```
+
+```bash
+kubectl get pods -n kube-system
+```
+
+#### Lesson 5 lab: Managing Deployments
+* Run a deployment that starts one nginx web service Pod on all cluster nodes
+
+
+#### Solution
+<details>
+  <summary>Lab 5 solution</summary>
+
+    ```bash
+    # Modify the file
+    cp daemonset-fluentd.yaml lab5.yaml
+    ```
+
+    ```bash
+    kubectl get all
+    ```
+</details>
+
+
+### 6.1 Understanding Kubernetes Storage Options
+* pvc
+* pv
+* Configmap
+* Secrets
+
+### 6.2 Configuring Pod Volumes
+* **kubectl create -f shared-volume.yaml**
+* **kubectl explain pods.spec.volumes**
+* Most common are empty and hostpath
+
+### 6.3 Configuring PV Storage
+* Check the pv.yaml file
+* Create the pv volume **kubectl create -f pv.yaml**
+* Verify if it is created **kubectl get pv**
+* The status shows as Active
+* **kubectl explain pv**
+* Check the file pv-nfs.yaml
+* **kubectl explain pv.spec**
+
+
+### 6.4 Configuring PVCs
+* Create pvc.yaml file
+* **kubectl create -f pvc.yaml**
+* Run **kubectl get pvc**
+* Status shows as bound
+* check the file nfs-pvc.yaml
+
+### 6.5 Configuring Pod Storage with PV and PVC
+* Important options for pod
+* Pod: volume, claimName
+* PVC: name, accessMode
+* PV: accessMode
+* Find the file pv-pod.yaml
+* **kubectl create -f pv-pod.yaml**
+* **kubectl describe pod pv-pod**
+* Check the file nfs-pv-pod.yaml
+
+### 6.6 Using StorageClass
+* A StorageClass provides a way for an administrator to describe a class of storage
+* StorageClasses can make PVCs bind PVs matching the same StorageClass only
+* In clusters, a default StorageClass can be offered for PVCs that don't request any particular class to bind to
+* Default StorageClass is often provided in cloud environments, but also in Minikube
+* Persistent Volumes that are dynamically created by a StorageClass will need the reclaimPolicy to be set decide what should happen to a dynamically created PV that is no longer used.
+
+### 6.7 Understanding ConfigMaps and Secrets
+* ConfigMap will provide
+  * files
+  * dir (content)
+  * var
+* Outside of the pod, it is about decoupling
+* volume from pod refer to files and dir
+* env refers to variables (vars)
+* secret are environments and base64 is the tool for encode secrets
+
+### 6.8 Managing ConfigMaps
+* This the structure of configmaps and pods
+![image info](./pictures/configmaps-structure.png)
+
+#### Demo: 1
+```bash
+kubectl create cm myconfig --from-literal=color=red
+```
+
+```bash
+kubectl get cm myconfig -o yaml
+```
+
+```bash
+kubectl create -f test-cm-pod.yml
+```
+
+```bash
+kubectl describe pod test-pod
+```
+
+#### Demo: 2 
+
+```bash
+vim nginx-custom-config.conf
+```
+
+```bash
+kubectl create cm nginx-cm --from-file nginx-custom-config.conf
+```
+
+```bash
+kubectl get cm nginx-cm -o yaml
+```
+
+```bash
+vim nginx-cm.yml
+```
+
+```bash
+kubectl create -f nginx-cm.yml
+```
+
+```bash
+kubectl exec -it nginx-cm -- cat /etc/nginx/conf.d/default.conf
+```
+
+### 6.9 Managing Secrets
+
+#### Understanding Secrets
+* Secrets allow for storage of sensitive data such as passwords, Auth tokens and SSH keys
+* Using Secrets makes sense, so the data doesn't have to be put in a Pod, and reduces the risk of accidental exposure
+* Some Secrets are automatically created by the system, users can also use Secrets
+* Secrets are used by Pods in the way that ConfigMals are used. They can also be created by the kubelet while pulling an image
+* Secrets are not encrypted, they are encoded
+
+#### Understanding Secrets Types
+* Three types of Secrets are offered:
+  * docker-registry: used for connecting to a Docker registry
+  * TLS: creates a TLS Secret
+  * generic: creates a Secret from a local file, directory or literal value
+
+#### Understanding Built-in Secrets
+* Kubernetes automatically creates Secrets that contain credentials for accessing the API, and automatically modifies the Pods to use this type of Secret
+* Use **kubectl describe pods <podname>** and look for the mount section to see them
+
+
+#### Creating Secrets
+* While creating a secret, the text value must be base64 encoded
+* When using **kubectl create secret** this is happening automatically
+* When creating a secret from a YAML file, you'll need to use the **base64** utility to generate the encoded string and use that in the YAML file.
+
+#### Using Secrets
+* From Pods, Secrets are used in the way that ConfigMaps are used
+* Mounted as volumes
+* Imported as variables
+
+#### Demo: 1
+
+```bash
+kubectl create secret generic secretstuff --from-literal=password=password --from-literal=user=linda
+```
+
+```bash
+kubectl get secrets secretstuff -o yaml
+```
+
+```bash
+# Check pod-secret.yaml file
+kubectl create -f pod-secret.yaml
+```
+
+```bash
+kubectl describe pod secretbox2
+```
+
+```bash
+kubectl exec -it secretbox2 -- ls -ls /secretstuff/
+```
+
+#### Demo: 2
+```bash
+kubectl create secret generic mysql --from-literal=password=root
+```
+
+```bash
+# Check the file pod-secret-as-var.yaml
+kubectl create -f pod-secret-as-var.yaml
+```
+
+```bash
+kubectl exec -it mymysql env
+```
+
+### Lesson 6 Lab: Configuring Storage
+* Configure a 2GiB persistent storage solution that uses a permanent directory on the host that runs the Pod. Configure a Deployment that runs the httpd web server and mounts the storage on /var/www
+
+
+#### Solution
+<details>
+  <summary>Lab 5 solution</summary>
+  * Pending my friend
+  * Lazy!
+</details>

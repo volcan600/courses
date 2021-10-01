@@ -1,0 +1,12 @@
+Log created: 2021-09-23T04:33:06.758883000Z
+Process ID:  41735 (0xa307)
+Parent PID:  1 (0x1)
+Executable:  /usr/lib/virtualbox/VBoxHeadless
+Arg[0]: /usr/lib/virtualbox/VBoxHeadless
+Arg[1]: --comment
+Arg[2]: vagrant_scripting_1632360148995_74797
+Arg[3]: --startvm
+Arg[4]: 6c380cef-36aa-4c4e-977c-df6d494ce466
+Arg[5]: --vrde
+Arg[6]: config
+AddRef: illegal refcnt=3221225469 state=2
