@@ -740,3 +740,63 @@ kubectl exec -it mymysql env
   * Pending my friend
   * Lazy!
 </details>
+ 
+ ### 7.1 Understanding Pod Networking
+ * Check the file net-demo.yaml
+ * Run **kubectl get pods | grep net**
+ * **kubectl exec net-demo -c busy1 ip a s**
+ * **kubectl exec net-demo -c busy2 ip a s**
+ 
+ ### 7.2 Understanding Pod-to-Pod Communication
+ * Pods are accessible on a specific Pod network
+ * Pods can communicate directly with one another and are all in the same network namespace
+ * The Container Network Interface (CNI) provides a framework in which networking modules can be used to establish communication according to different needs.
+ * If no limitations are implemented, all Pods can communicate to all other Pods without limitations
+ 
+ #### Understanding Network Policies
+ * Network Policies make it possible to implement restrictions on direct traffic between Pods
+ * Using a Network Policy is only possible if the network plugin used offers the required support
+ * Use **kubectl get pods -o wide**
+ * To seperate pods communication. Need to use network policies
+ 
+ ### 7.3 Understanding Service Networking 
+ * Pod IP addresses are volatile, so something else is needed to access applications: the service
+ * Service provides access to Pod endpoints by using Labels
+ * Service load-balances workload between the Pods that are accessible as an endpoint
+ * End-users connect with the service objects
+ 
+ #### Understanding Services Types
+ * ClusterIP: the service is internally exposed and its reachable only from within the cluster
+ * NodePort: the service is exposed at each node's IP address at a static port. The service can be reached from outside the cluster at nodeip:nodeport
+ * Loadbalancer: the cloud provider offers a load balancer that routes traffic to either NodePort or Cluster based services, this type requires and external load balancer
+ * ExternalName: the service is mapped to external name that is implemented as a CoreDNS CNAME record and points to an external DNS name
+  
+ ### 7.4 Configuring Service Networking
+ 
+ #### Configuring Services
+ * From the command line, use **kubectl expose** to create a service that exposes a Pod or Deployment
+ * Alternatively, create YAMl file that uses spec.selector to refer to the label that is used in the object that you want to be exposed
+ 
+ #### Demo: Exposing Applications Using Services
+ * **kubectl create deployment nginxsvc --image=nginx**
+ * **kubectl scale deployment nginxsvc --replicas=3**
+ * **kubectl expose deployment nginxsvc --port=80**
+ * **kubectl describe svc nginxsvc** # look for endpoints
+ * **kubectl get svc nginx -o yaml**
+ * **kubectl get svc**
+ * **kubectl get endpoints**
+ 
+ #### Demo: Accessing Deployments by Services
+ * **minikube ssh** or connect to cluster node console**
+ * **curl http://svc-ip-address**
+ * **exit**
+ * **kubectl edit svc nginxsvc
+  ...
+  protcol: TCP
+  nodePort: 32000
+  type: NodePort**
+ * **kubectl get svc**
+ * (From host): curl http://ip:32000
+ 
+ 
+ 
