@@ -736,67 +736,323 @@ kubectl exec -it mymysql env
 
 #### Solution
 <details>
-  <summary>Lab 5 solution</summary>
+  <summary>Lab 6 solution</summary>
   * Pending my friend
   * Lazy!
 </details>
  
- ### 7.1 Understanding Pod Networking
- * Check the file net-demo.yaml
- * Run **kubectl get pods | grep net**
- * **kubectl exec net-demo -c busy1 ip a s**
- * **kubectl exec net-demo -c busy2 ip a s**
- 
- ### 7.2 Understanding Pod-to-Pod Communication
- * Pods are accessible on a specific Pod network
- * Pods can communicate directly with one another and are all in the same network namespace
- * The Container Network Interface (CNI) provides a framework in which networking modules can be used to establish communication according to different needs.
- * If no limitations are implemented, all Pods can communicate to all other Pods without limitations
- 
- #### Understanding Network Policies
- * Network Policies make it possible to implement restrictions on direct traffic between Pods
- * Using a Network Policy is only possible if the network plugin used offers the required support
- * Use **kubectl get pods -o wide**
- * To seperate pods communication. Need to use network policies
- 
- ### 7.3 Understanding Service Networking 
- * Pod IP addresses are volatile, so something else is needed to access applications: the service
- * Service provides access to Pod endpoints by using Labels
- * Service load-balances workload between the Pods that are accessible as an endpoint
- * End-users connect with the service objects
- 
- #### Understanding Services Types
- * ClusterIP: the service is internally exposed and its reachable only from within the cluster
- * NodePort: the service is exposed at each node's IP address at a static port. The service can be reached from outside the cluster at nodeip:nodeport
- * Loadbalancer: the cloud provider offers a load balancer that routes traffic to either NodePort or Cluster based services, this type requires and external load balancer
- * ExternalName: the service is mapped to external name that is implemented as a CoreDNS CNAME record and points to an external DNS name
-  
- ### 7.4 Configuring Service Networking
- 
- #### Configuring Services
- * From the command line, use **kubectl expose** to create a service that exposes a Pod or Deployment
- * Alternatively, create YAMl file that uses spec.selector to refer to the label that is used in the object that you want to be exposed
- 
- #### Demo: Exposing Applications Using Services
- * **kubectl create deployment nginxsvc --image=nginx**
- * **kubectl scale deployment nginxsvc --replicas=3**
- * **kubectl expose deployment nginxsvc --port=80**
- * **kubectl describe svc nginxsvc** # look for endpoints
- * **kubectl get svc nginx -o yaml**
- * **kubectl get svc**
- * **kubectl get endpoints**
- 
- #### Demo: Accessing Deployments by Services
- * **minikube ssh** or connect to cluster node console**
- * **curl http://svc-ip-address**
- * **exit**
- * **kubectl edit svc nginxsvc
-  ...
-  protcol: TCP
-  nodePort: 32000
-  type: NodePort**
- * **kubectl get svc**
- * (From host): curl http://ip:32000
- 
- 
- 
+### 7.1 Understanding Pod Networking
+* Check the file net-demo.yaml
+* Run **kubectl get pods | grep net**
+* **kubectl exec net-demo -c busy1 ip a s**
+* **kubectl exec net-demo -c busy2 ip a s**
+
+### 7.2 Understanding Pod-to-Pod Communication
+* Pods are accessible on a specific Pod network
+* Pods can communicate directly with one another and are all in the same network namespace
+* The Container Network Interface (CNI) provides a framework in which networking modules can be used to establish communication according to different needs.
+* If no limitations are implemented, all Pods can communicate to all other Pods without limitations
+
+#### Understanding Network Policies
+* Network Policies make it possible to implement restrictions on direct traffic between Pods
+* Using a Network Policy is only possible if the network plugin used offers the required support
+* Use **kubectl get pods -o wide**
+* To seperate pods communication. Need to use network policies
+
+### 7.3 Understanding Service Networking 
+* Pod IP addresses are volatile, so something else is needed to access applications: the service
+* Service provides access to Pod endpoints by using Labels
+* Service load-balances workload between the Pods that are accessible as an endpoint
+* End-users connect with the service objects
+
+#### Understanding Services Types
+* ClusterIP: the service is internally exposed and its reachable only from within the cluster
+* NodePort: the service is exposed at each node's IP address at a static port. The service can be reached from outside the cluster at nodeip:nodeport
+* Loadbalancer: the cloud provider offers a load balancer that routes traffic to either NodePort or Cluster based services, this type requires and external load balancer
+* ExternalName: the service is mapped to external name that is implemented as a CoreDNS CNAME record and points to an external DNS name
+
+### 7.4 Configuring Service Networking
+
+#### Configuring Services
+* From the command line, use **kubectl expose** to create a service that exposes a Pod or Deployment
+* Alternatively, create YAMl file that uses spec.selector to refer to the label that is used in the object that you want to be exposed
+
+#### Demo: Exposing Applications Using Services
+* **kubectl create deployment nginxsvc --image=nginx**
+* **kubectl scale deployment nginxsvc --replicas=3**
+* **kubectl expose deployment nginxsvc --port=80**
+* **kubectl describe svc nginxsvc** # look for endpoints
+* **kubectl get svc nginx -o yaml**
+* **kubectl get svc**
+* **kubectl get endpoints**
+
+#### Demo: Accessing Deployments by Services
+* **minikube ssh** or connect to cluster node console**
+* **curl http://svc-ip-address**
+* **exit**
+* **kubectl edit svc nginxsvc
+...
+protcol: TCP
+nodePort: 32000
+type: NodePort**
+* **kubectl get svc**
+* (From host): curl http://ip:32000
+
+### 7.5 Managing ExternalName Service Objects
+
+#### Understanding ExternalName
+* When services are added, a DNS entry to the service is added as well
+* This entry has the format my-service.namespace.svc.cluster.local and allows internal clients to use FQDN to access internal services
+* ExternalName adds a DNS in a migration process, where parts of a microservice are still running externally but must be referred to by parts that are running internally already
+* Another use case is to refer to services that are running in another namespace, which normally are not accessible
+* Notice that because the name of the service in the original request will not match the name of the service that is handling the request, ExternalName often doesn't work out well
+
+#### Understanding ExternalName
+* The ExternalName service types connect a service name to an external DNS name
+* When the service name is accessed as a DNS name, the request is redirected to the externalName server
+* Note that for testing you'll need an http server, not an https server
+
+### 7.6 Understanding Ingress
+
+#### Understanding the Ingress Controller
+* The Ingress controller makes the connection between the external physical network and the internal cluster network
+* To do its work, the Ingress controller programs an external load balancer 
+* Many controllers exists, each of which connects the external load balancer to the internal cluster resources in a different way
+* The ingress controller talks to kubernetes API objects that connect to service objects
+* In Minikube, the nginx controller is used, in kubeadm cluster you'll need a controller, but also an external load balancer if you want to use ingress
+* Use **minikube addons enable ingress** to enable the minikube controller
+* Or add your own to kubeadm cluster:
+  https://doc.traefik.io/traefik/v1.7/user-guide/kubernetes/
+
+#### Understanding Ingress
+* Ingress exposes HTTP and HTTPS routes from outside the cluster to services within the cluster
+* For non-HTTP- and HTTPS-based traffic, the LoadBalancer or NodePort service objects must be used
+* Advanced traffic routing can be controlled by Ingress rules
+* In the easiest configuration, Ingress forwards all traffic to one service
+* Paths can be used to forward traffic to multiple services
+
+#### Understanding Ingress API Versions
+* Ingress in older Kubernetes was in apiVersion: extensions/v1beta1
+* Ingress in more recent Kubernetes is in apiVersion: networking.k8s.io/v1
+
+### 7.7 Adding Traefik Ingress to a Kubeadm Cluster
+
+#### Procedure Overview
+* https://doc.traefik.io/traefik/v1.7/user-guide/kubernetes/
+* Configure RBAC to authorize Traefik to use the kubernetes API
+* Deploy the Traefik agent using either a deployment or a daemonset
+* Check Traefik Pods in the kube-system namespace
+* Submit an Ingress to expose the Traefik Web UI
+* Set up optional addtional stuff
+
+#### Demo: Adding Traefik Ingress to k8s Cluster
+
+```bash
+# The file is located on cka repo
+less ingres-rbac.yaml
+```
+
+```bash
+# The file is located on cka repo
+less traefik-ds.yaml
+```
+
+
+```bash
+# The file is located on cka repo
+less traefik-in.yaml
+```
+
+```bash
+kubectl create -f ingress-rbac.yaml
+```
+
+```bash
+kubectl create -f traefik-ds.yaml
+```
+
+```bash
+kubectl create -f traefik-in.yaml
+```
+
+```bash
+# Verify ingress is working
+kubectl get pods -n kube-system -o wide
+```
+
+### 7.8 Creating Ingress Resources
+
+#### Demo: Creating Ingreess -1
+* Note: This demo continues the demo in lesson 7.4 and it is for minikube
+* **minikube addons enable ingress**
+* **kubectl get deployment**
+* **kubectl get svc nginxsvc**
+* **curl http://$(minikube ip):32000**
+* **vim nginxsvc-ingress.yaml**
+* **kubectl apply -f nginxsvc-ingress.yaml**
+* **kubectl get ingress** - wait until it shows an IP address, this takes 3 minutes 
+* **sudo vim /etc/hosts**
+  * **$(minikube ip) nginxsvc.info**
+* **curl nginxsvc.info**
+
+#### Demo: Creating Ingress - 2
+* **kubectl create deployment newdep --image=gcr.io/google-samples/hello-app:2.0**
+* **kubectl expose deplyoment newdep --port=8080**
+* Add the following **nginxsvc-ingress.yaml**
+
+```yaml
+- path: /hello
+  pathType: prefix
+  backend:
+    service:
+      name: newdep
+      port:
+        number: 8080
+```
+
+### Lesson 7 Lab: Managing Pod Networking
+* Create two services: myservice should be exposing port 9376 and forward to targeport 80, and mydb should be exposing port 9377 and forward to port 80
+* Create a Pod that will start a busybox container that will sleep for 3600 seconds, but only if the aforesaid service are availables
+* To test that it is working, start the init container Pod before starting the services
+
+#### Lesson 7 Lab: Solution
+<details>
+  <summary>Lab 7 solution</summary>
+  * check lab7-1.yaml
+  * check lab7-2.yaml
+</details>
+
+
+### 8.1 Understanding Custom Resources
+
+#### Understanding Custom Resources
+* Kubernetes Offers an API set that defines the regular kubernetes resources
+* The kubernetes API set is extensible
+* This allows anyone to create custom resources for local usage in a cluster
+* After installation, custom resources can be created and accessed using **kubectl**
+* When combined with a costom controller, custom resources provide a declarative API
+* This allows you to declare a desired state of the resource, where the controller keeps the current state in sync with the desired state
+* Combined custom resources and controllers can be offered as an operator
+
+#### Defining Custom Resources
+* Custom resources can be offered as a stand-alone API or as an aggregated API in the kubernetes APIs
+* Using the aggregated API approach allows for management of the custom resource using standard kubernetes tools such as **kubectl**
+* API aggregation requires programming, but offers more control over API behavior
+* Custom Resource Definitions (CRDs) are simple and can be created without any programming
+* CRDs are offered through the CustomResourceDefinition API
+* Using CRDs allows you to define custom resources with names and properties that you specify
+
+### 8.2 Understanding Operators
+* An operator is a solution that consists of custom resources and controllers 
+* Operators are typically implemented in a programming language, such as Goland, Python or Java
+* Operators are packaged as container images which are deployed using kubernetes YAML files
+* After deploying, custom resources will be added to the cluster
+* Some kubernetes distributions, like OpenShift come with preconfigured operators to provide additional functionality
+
+### 8.3 Adding CustomResourceDefinition
+* While adding the **CustomResourceDefinition** kind, several items are important:
+  * **apiVersion** is set to the current version of **apiextensions.k8s.io/v1**
+  * **spec.group** has the API name to be used within the resource apiVersion
+  * **spec.versions.schema** defines the properties that will be visible in the resource spec
+  * **name** must define at least **plural, singular** and **kind**
+* While adding the custom object, **apiVersion** refers to **spec.group** from the CRD, followed by the version number
+
+```bash
+# Go to the cka repo and check the file crontab-crd.yaml
+kubectl create -f crontab-crd.yaml
+```
+
+```bash
+# Go to the cka repo and check the file my-crontab.yaml
+kubectl create -f my-crontab.yaml
+```
+
+```bash
+# Verify the result
+kubectl get crontab my-new-cronjob -o yaml
+kubectl explain crontab.spec
+```
+
+### Lesson 8 Lab: Managing Custom Resources
+* Create a custom resource for an SSL certificate, that defines at least the following properties:
+  * cert
+  * key
+  * domain
+
+#### Lesson 8 Lab: Solution
+<details>
+  <summary>Lab 8 solution</summary>
+  * Create file sslcerts-crd.yaml with the following yaml content
+  ```yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sslconfigs.stable.example.com
+spec:
+  group: stable.example.com
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              cert:
+                type: string
+              key:
+                type: string
+              domain:
+                type: string
+  scope: Namespaced
+  names:
+    plural: sslconfigs
+    singular: sslconfig
+    kind: SslConfig
+    shortNames:
+    - ssl
+
+    * Create the resource
+
+    ```bash
+    kubectl create -f sslcerts-crd.yaml
+    ```
+
+    * Check the CRD resources
+    ```bash
+    kubectl get crd
+    ```
+
+    * Create my-sslcert.yml file with the following content
+    ```yaml
+apiVersion: stable.example.com/v1
+kind: SslConfig
+metadata:
+  name: my-sslcert
+spec:
+  cert: mycertfile
+  key : myprivatekey
+  domain: "\*.stable.example.com"
+    ```
+
+    * Create resource
+    ```bash
+    kubectl create -f my-sslcert.yml
+    ```
+
+    * Check if the api resource exists
+    ```bash
+    kubectl api-resources | grep ssl
+    ```
+    
+    ```bash
+    kubectl get ssl    
+    ```
+
+    ```bash
+    kubectl get ssl my-sslcert -o yaml    
+    ```
+</details>
