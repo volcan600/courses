@@ -94,6 +94,13 @@ sudo yum install -y vim git bash-completion
 
 ```bash
 git clone https://github.com/sandervanvugt/cka
+git cline https://github.com/sandervanvugt/kubernetes
+```
+> Note: optional this configuration, you can use the following guide to deploy a easy k8s using vagrant. 
+> ```bash
+ # Follow the README.md file. Basically is create a virtual network with the same network as the file and run the vagrant
+ # vagrant and virtualbox must be isntalled
+ git clone https://github.com/volcan600/vagrant-kubeadm-kubernetes
 ```
 * Run the script on master and all nodes
 ```bash
@@ -1056,3 +1063,50 @@ spec:
     kubectl get ssl my-sslcert -o yaml    
     ```
 </details>
+
+### 9.1 Managing Scheduler Settings
+* Scheduling makes sure that Pods are matched to Nodes so that kubelet can run them
+* The kube-scheduler determines which nodes will run a Pod
+* Users can set higher priority Pods
+* The scheduler uses priority functions to send a Pod spec to a specific node to be created
+* Different labels can be used to influence where a node will be scheduled
+* Other options can also be used to influence Pod scheduling
+  * Use **nodeName** in the Pod spec to specify which node the Pod should run
+  * Use **nodeSelector** in labels to specify how to run a Pod
+
+### 9.2 Understanding Scheduler Policy Working
+* **kube-scheduler** works with Filtering and Scoring to determine where to run a Pod
+* In filtering, a set of Nodes is found where it is feasible to schedule the Pod because the node meets the required resources
+* In scoring, the scheduler ranks all nodes remaining after filtering to choose the most suitable Pod placement
+
+#### Understanding Filtering
+* Different options are used to check if a node is eligible to run the Pod
+* PodFitsHostsPorts: checks if free network ports are available
+* PodFitsResources: checks if the node has sufficient CPU and Memory resources
+* PodMatchNodeSelector: checks if the Pod Node Selector matches the Node labels
+* CheckNodeDiskPressure: Checks if a node is reporting a filesystem that is almost full, so that the Pod won't be scheduled there
+* CheckVolumeBiding: Evaluates if the volumes that are requested can be serviced by the node using bound and unbound PVCs
+
+#### Understanding Scoring
+* After filtering out nodes, scoring is used to evaluate remaining nodes
+* SelectorSpreadPriority: spreads Pods across hosts, considering Pods that belong to the same Service, StatefulSet or ReplicaSet
+* LeastRequestedPriority: prioritizes nodes with fewer requested resources
+* NodeAffinityPriotiy: prioritizes nodes according to node affinity shecduling preferences
+
+### 9.3 Using nodeSelector
+
+#### Using nodeSelector and nodeName
+* The nodeSelector field in the pod.spec specifies a key-value pair that must match a label which is set on nodes that are eligible to run the Pod
+* Use **kubectl label nodes worker1.example.com disktype=ssd** to set the label on a Pod
+* Use **nodeSelector:disktype:ssd** in the pod.spec to match the Pod to the specific node
+* **nodeName** is part of the pod.spec and can be used to always run a Pod on a node with specific name
+  * Not recommended: if that node is not currently available, the Pod will never run
+
+### 9.4 Managing Node Affinity
+* nodeSelector provides a simple way to constrain nodes, the (anti) Affinity feature enhances the options
+  * it uses a more expressive language
+  * it offers an option to use soft rules
+  * it can work with labels that are set on other pods, to make sure that specific pods cannot be co-located
+* Also, two types of Affinity are offered
+  * Node Affinity sets Affinity rules on nodes
+  * inter-pod Affinity specifies rules between Pods
