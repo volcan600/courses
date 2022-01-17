@@ -226,4 +226,3 @@ echo $?
 * This is a task that can be done perfectly using shell scripts
 * Shell scripts can pick up files, filter them, rename them and process them for further treatment using a wide range of tools that are native to the Linux operating system
 * While using shell scripts in DevOps, it's important to develop them in an idempotent way
-
