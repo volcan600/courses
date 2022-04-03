@@ -31,6 +31,10 @@ terraform init -upgrade
 * Good practice to create a directory for each project or demo
 * It is good practice store code in a repository
 * Always destroy resources for a practical to avoid charges. For production do not use destroy or auto-approval
+* **terraform fmt** will check the format. If correct will print the files to check
+* **terraform validate** Validate your configuration. The example configuration provided above is valid, so Terraform will return a success message.
+* **terraform show** will show the current terraform.tfstate file
+* **terraform state list** will list resources in your project's state
 
 ### 19. Understanding Atributes and Output Values in Terraform
 * Terraform has capability to output the attribute of a resource with the output values
@@ -176,3 +180,214 @@ max(5, 12, 9)
   * Type Conversion
 * **terraform console** command is helpful to test functions
 * [Terraform function documentation](https://www.terraform.io/language/functions)
+
+### 30. Debugging in Terraform
+* ``export TF_LOG=TRACE`` to enable debug option. When run ``terraform plan`` will show debug
+* Also, you can export the output to a file with the following variable ``export TF_LOG_PATH=/tmp/terraform-crash.log``
+
+### 31. Terraform Format
+* The ``terraform fmt`` command is used to rewrite Terraform configuation fules to take care of the overall formatting
+
+### 32. Validating Terraform Configuration Files
+* ``terraform validate`` primarily checks whether a configuration is syntactically valid
+
+### 33. Load Order & Semantics
+* Terraform generally loads all the configuration files within the directory specified in alphabetical order
+* The files loaded must end in either .tf or .tf.json to specify the format that is in use.
+  
+### 34. Dynamic Blocks
+* In many of the use-cases, there are repeatable nested blocks that needs to be defined.
+* Dynamic blocks allows us to dynamically construct repatable nested blocks which is supported inside resource, data, provider, and provisioner blocks. example:
+```bash
+dynamic "ingress" {
+  for_each = var.ingress_ports
+  content {
+    from_port   = ingress.value
+    to_port     = ingress.value
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+
+### 35. Taiting Resources
+* You have created a new resource via Terraform
+* Two ways to deal with this: Import the changes to Terraform / Delete & Recreate the resource
+* The terraform taint command manually marks a Terraform-managed resource as tainted, forcing it to be destroyed and recreated on the next apply
+* ``terraform taint aws_instance.myec2`` 
+
+### 36. Splat Expressions
+* Splat Expression allows us to get a list of all the attributes
+```yaml 
+resource "aws_iam_user" "lb" {
+  name = "iamuser.${count.index}"
+  count = 3
+  path = "/system/"
+}
+
+output "arns" {
+  value = aws_iam_user.lb[*].arn
+}
+```
+
+### 37. Terraform Graph
+* The **terraform graph** command is used to generate a visual representation of either a configuration or execution plan
+* The output of terraform graph is in the DOT format, which can easily be converted to an image.
+* Example: ``terraform graph > graph.dot`` It will convert to test, you can also use an additional tool to convert to nice graph(graphviz - Graph Visualization Software)
+* ``cat graph.dot | dot -Tsvg > graph.svg``
+
+### 38. Saving Terraform Plan to File
+* The generated terraform plan can be saved to a specific path
+* To generate``terraform plan -out=path`` 
+* To apply using path ``terraform apply demopath``
+
+### 39. Terraform Output
+* The terraform output command is used to extract the value of an output variable from the state file
+* Example:
+``terraform output iam_name``
+
+### 40. Terraform Settings
+* terraform version
+```json
+terraform {
+  required_version = ">.12.0"
+}
+```
+* provider version
+```
+terraform {
+  required_providers {
+    mycloud = {
+      source = "mycorp/mycloud
+      version = "~> 1.0"
+    }
+  }
+}
+```
+
+### 41. Dealing with Large Infrastructure
+* switch to smaller configuration were each canbe applied independently
+* We can prevent terraform form querying the current state during operations like terraform plan. This can be achieved with the ``-refresh=false`` flag
+``terraform plan -refresh=false -target=aws_security_group.allow_ssh_con``
+
+### 42. Zipmap Function
+* The zipmap function constructs a map from a list of keys and a corresponding list of values.
+* Example:
+```
+zipmap(["pineapple","orange","strawberry"],["yellow","orange","red"])
+{
+  "oranges" = "orange"
+  "pineapple" = "yewllo"
+  "strawberry" = "red"
+}
+```
+
+### 45. Types of Provisioners
+* Terraform has capability to turn provisioners both at the time of resource creation as well as destruction.
+* Types: local-exec/remote-exec
+* local-exec provisioners allow us to invoke local executable after resource is created
+```
+resource "aws_instance" "web" {
+  #...
+
+  provisioner "local-exec" {
+    command = "echo ${aws_instance.web.private_ip} >> private_ips.txt"
+  }
+}
+```
+* Remote-exec provisioners allow to invoke scripts directly on the remote server
+```
+resource "aws_instance" "web" {
+  provisioner "remote-exec"{
+
+  }
+}
+```
+
+### 47. Implementing local-exec provisioners
+* local-exec provisioners allows us to invoke a local executable after the resource is created
+* One of the most used approach of local-exec is to run ansible-playbooks on the created server after the resource is created
+
+### 48. Creation-Time & Destroy-Time Provisioners
+* There are two primary types of provisioners:
+* Creation-Time Provisioner: Creation-time provisioners are only run during creation, not during updating or any other lifecycle. **If a creation-time provisioner fails, the resource is marked as tainted**
+* Destroy-Time Provisioner: Destroy provisioners are run before the resource is destroyed.
+```
+resource "aws_instance" "web" {
+  #.....
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "echo 'Destroy-time provisioner'"
+  }
+}
+```
+
+### 49. Failure Behavior for Provisioners
+* By default, provisioners that fail will also cause the Terraform apply itself to fail.
+* The **on_failure** setting can be used to change this. The allowed values are
+* continue: Ignore and continue with creation or destruction
+* fail: Raise an error and stop applying (the default behavior). If this is a creation provisioner, taint the resource.
+
+
+### 51. Understanding DRY principle
+* In software engineering, don't repeat yourself(DRY) is a principle of software development aimed at reducing repetition of software patterns
+* In the earlier lecture, we were making static content into variables so that there can be single source of information
+* Use module as reference
+
+### 54. Terraform Registry
+* The Terraform Registry is a repository of modules written by the Terraform community. The registry can help you get started with Terraform more quickly
+
+### 55. Terraform Workspace
+* Terraform allows us to have multiple workspaces, with each of the workspace we can have different set of environment variables associated
+* **terraform workspace -h**/**terraform workspace**/**terraform workspace list**/ **terraform workspace select dev**
+
+### 58. Integrating with GIT for team management
+* Local changes are not always good
+* Use github, bitbucket, gitlab to store .tf files except sensible ones
+  
+### 60. Security Challenges in Commiting TFState to GIT
+* Never store secret or sensible information on git cloud providers
+
+### 61. Module Sources in Terraform
+* The source argument in a module block tells Terraform where to find the source code for the desired child module
+
+### 62. Terraform and .gitignore
+* Terraform and .gitignore. Files to ignore: .terraform, terraform.tfvars, terraform.tfstate, crash.log 
+
+### 64. Implementing S3 Backend
+* Store terraform.tstate file in cloud 
+
+### 65. Challenges with State File locking
+* This is very important as otherwise during your ongoing terraform apply operations, if others also try for the same, it would corrupt your state file
+
+### 66. Integrating DynamoDB with S3 for state locking
+* it is necesary to implement locking in case two terraform apply ran simultaneously. So the resource will lock until the first task is completed
+
+### 67. Terraform State Management
+* It is important to never modify the state file directly. Instead, make use of terraform state command.
+* sub command: list, mv(useful to rename existing resource without destroying and recreating it), pull, push, rm and show
+
+### 68. Importing Existing Resources with Terraform Import
+* terraform import <resource> <id>
+
+### 70. Handling Access & Secret Keys the Right Way in Providers
+* NEVER store any sensible secret on terraform files
+
+### 74. Sensitive Parameter
+* Setting the sensitive to "true" will prevent the field's values from showing up in CLI output and in Terraform Cloud
+  
+### 76. Overview of Terraform Cloud
+* Terraform Cloud manages, Terraform runs in a consistent and reliable environment with various features like access controls, private registry for sharing modules,policy controls and others.
+
+### 77. Creating Infrastructure with Terraform Cloud
+* Explore terraform cloud
+
+### 79. Overview of Sentinel
+* Sentinel is an embedded policy-as-code framework integrated with the HashiCorp Enterprise products.
+* It enables fine-grained, logic-based decisions, and can be extended to use information from external sources
+* terraform plan > sentinel checks > terraform apply
+* terraform cloud trial should be enable to have access to policies
+
+### 80. Overview of Remote Backends
+* The remote backend stores Terraform state and may be used to run operations in Terraform Cloud.
