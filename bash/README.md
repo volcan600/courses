@@ -226,3 +226,46 @@ echo $?
 * This is a task that can be done perfectly using shell scripts
 * Shell scripts can pick up files, filter them, rename them and process them for further treatment using a wide range of tools that are native to the Linux operating system
 * While using shell scripts in DevOps, it's important to develop them in an idempotent way
+
+### 3.3 Bash and Other Shells
+* Bourne Shell (/bin/sh) was released in 1979, and became the most important shell in version 7 UNIX
+* Bash is Bourne Again Shell, and was developed as Bourne Shell next generation
+* Zsh and Dash are other common shells on Linux
+
+#### Understanding the C Shell
+* C-shell (/bin/csh) was an important alternative to Bourne shell in years of UNIX
+* The main benefit of csh, is that is offers a C language-like syntax
+* A Bash was trying to offer compatibility to many other shells, some C syntax features are included in Bash as well
+* For example, instead of using **echo** to print text, **printf** can be used
+
+#### Undestanding Bash Script Compatibility
+* Every shell comes with a specific feature set
+* To ensure a Bash script is interprted the right way. it should start with **#!/bin/bash**
+* The only requirement for this to work, is that the Bash shell must be installed on the current operating system
+
+### 3.4 Shell scripts vs Automation
+#### Understanding Automation
+* In automation, tools like Ansible, Puppet, Chef and others are used to get managed systems in a desired state
+* To do so, the desired state is described in a file, often written in YAML
+* The automation tools compares the current state of manged systems to the desired state and takes action if needed 
+* If not action is needed, nothing will happen
+* Running Automation tool multiple times, should not lead to anything different implementation of the desired state; this feauture is known as indempotency
+* Bash is not used to define desired state
+* A Bash script defines actions to be accomplished
+* Managing idempotency in Bash scripts is much harder to achieve
+* Bash, however, is much more than configuration management; it's a programming language that helps in processing data, dealing with files, and running very specific tasks
+* Automation doesn't replace the need for Bash scripts, both solutions are complimentary to each other
+
+### 3.5 Shell scripts vs Python
+#### Understanding Python
+* Python is an object-oriented programming language that can be used for almost any purpose
+* Python comes with many libraries that extend its functionality and make it useful in different environments
+* Python also has more advanced debugginng tools and error handling feautures, which make it a better solution for writing bigger programs
+* Bash scripts are using Bash shell, and for that reason are easier to program
+* Core parts of Linux are written in Bash
+* Bash can use commands line utilities without any modification
+* Bash is part of the shell, and for that reason uses shell features in a more efficent way
+
+### Lesson 3 Lab: Running a Bash Script in Zsh
+* Set your current shell to **zsh** (whihout changing the default shell).
+* Write a simple bash script that prints the text "hello world" on screen. Ensure that is executed as a Bash script, even if Zsh is the current scripting environment.
