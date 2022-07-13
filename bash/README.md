@@ -135,12 +135,13 @@ grep root /etc/* 2>/dev/null > grepout.txt
 * Bourne shell (/bin/sh) was the original shell
 * C-shell (/bin/csh) was developed as a shell that is very close to the C programming language
 * Korne shell (/bin/ksh) was created as a shell that offers the best of Bourne and C-shell
-
 #### Understanding Linux Shells
-* Bash us Bourne Again Shell, a remake of the orignal Bourne shell that was invented in the early 1970's
+* Bash is Bourne Again Shell, a remake of the orignal Bourne shell that was invented in the early 1970's
 * Bash is the default shell on most Linux distributions
 * Another common shell is Zsh, which is used as the default shell on MacOS
 * And yet another common shell is Dash, which is used frequently used on Debian
+* While writing shell scripts, Bash is the standard and it's very easy to make Bash work, even if you're in a non-Bash shell
+
 
 ### 2.8 Understanding Exit Codes
 * After execution, a command generates an exit code
@@ -149,6 +150,7 @@ grep root /etc/* 2>/dev/null > grepout.txt
 * If 1, there was a generic error
 * The developer of a program can be decide to code other exit codes as well
 * In shell scripts, this is done by using **exit n** in case an error condition occurs
+* You can use the man command to figure out if there any documentation related to the exit codes
 
 #### Demo: exit codes
 
