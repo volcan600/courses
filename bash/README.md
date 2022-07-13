@@ -339,3 +339,60 @@ echo $?
 * **ls +(e).txt**
 * **ls @(e).txt**
 
+### 4.5 Using grep
+
+#### Understanding grep
+* **grep** is an external command that helps you filter text
+* When using **grep**, it is recommended to put the text pattern you're searching for between single quotes to avoid interpretation by shell
+  * **grep 'root'**
+  * **ps aux | grep 'ssh'**
+* **grep uses regular expressions, which are advanced text filters that help you find text patterns in a flexible way
+* Examples:
+  * **ps aux | grep 'cron' | grep -v 'grep'**
+  * **grep -l 'root' * 2>/dev/null**
+  * **grep -A 1 -B 1 'root' * 2>/dev/null**
+  * **grep -r 'root' * 2>/dev/null**
+
+### 4.6 Understanding Regular Expressions
+* Regular Expressions are text patterns that are used by tools like grep and others
+* _Always_ put your regex between single quotes!
+* Don't confuse regular expressions with globbing (shell wildcards)!
+* They look like file globbing, but they are not the same
+  * **grep 'a*' a\***
+* For use with specific tools only(**grep, vim, awk, sed**)
+* See **man 7 regex** for details
+
+#### Why Regular Expressions are Confusing
+* Basic regular expressions work with most tools
+* Extended regular expressions don't always work. Use **grep -E** if it is an extended regular expression
+* Some scripting languages (like perl) come with their own regular expressions
+
+#### Understanding Regular Expressions
+* Regular expressions are built around _atoms_; an atom specifies what text is to be matched
+  * Atoms can be a single characters, range of characters, or dot if you don't know the character
+* The second element is the repetition operator, which specifies how many times a character should occur
+* The third element is indicating where to find the next character
+* Examples:
+  * **^** beginning of the line: **grep '^l' myfile**
+  * **\&dollar** end of the line: **grep 'anna$'**
+  * **\\b** end of word: **grep '^lea\\b' myfile** will find lines starting with lea, but not with leanne
+  * **\*** zero or more times: **grep 'n.\*x' myfile
+  * **+** one or more times(extended regex!): **grep -E 'bi+t' myfile*&
+  * **?** zero or more time (extended regex!): **grep -E 'bi?t' myfile**
+  * **n\\{3\\}n** occurs 3 times: **grep 'bon\\{3\\}nen' myfile**
+  * **.** one character: **grep '^.\$' myfile**
+
+### 4.7 Using cut and sort
+* **cut** allows you to filter out fields, based on a field separator: **cut -d : -f 1 /etc/passwd**
+  * Use **awk** for more advance options
+* **sort** allows you to sort items. Without any options, sort will happen based on the order of characters in the ASCII table
+  * Use **sort -n** for numeric sort
+  * Use **sort -d** for dictionary order
+  * Many other useful option are available, consult the man page
+
+#### Understanding IFS
+* Commands like **cut**, and many more, work based on the Internal Field Separator (IFS)
+* IFS by default is a space
+* Many commands have options to define the IFS that should be used
+* cat /etc/passwd
+* 
