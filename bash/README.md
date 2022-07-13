@@ -269,3 +269,71 @@ echo $?
 ### Lesson 3 Lab: Running a Bash Script in Zsh
 * Set your current shell to **zsh** (whihout changing the default shell).
 * Write a simple bash script that prints the text "hello world" on screen. Ensure that is executed as a Bash script, even if Zsh is the current scripting environment.
+
+### 4.1 Using echo
+* **echo** is a Bash internal that is used to print text on screen
+* To use the formatting options, use **echo -e** and put the string between double quotes
+  * **\b** is backspace: **echo -e "b\bc"**
+  * **\n** is newline: **echo -e "b\nc"**
+  * **\t** is tab: **echo -e "b\tc"**
+* **printf** can be used as an alternative, but has its origin from the C-shell
+
+### 4.2 Understanding **printf**
+* **printf** is used to print text on screen, but has more formatting options than **echo**
+* **printf** does not print a new line character by default, use **printf "%s\n" "hello world"** to print a new line
+  * **"%s"** is the format string, **"\n"** is the newline formatting character
+  * **"\t"** is also common and used to print tab stops
+  * The format string is applied to all arguments used with **printf**
+  * Compare the following commands:
+    * **printf "%s\n" hello world**
+    * **printf "%s\n" "hello world"**
+    * **printf "%s\n" "hello" "world"**
+
+#### Using **printf** Formatting Strings
+* **"%s"** is used to identify the arguments as strings
+* **"%d"** is used to identify the arguments as integers
+* **"%f"** is used to identify the arguments as floats 
+* While using formatting strings, further specifiers can be used
+  * **printf "%f\n" 255**
+  * **printf "%.1f\n" 255**
+  * **for i in $(seq 1 10);do printf "%04d\t" "$i";done**
+
+### 4.3 Using Bash Options
+* The Bash shell can be configured with additional options, using **set**
+  * **set -x**
+  * **ls**
+  * **set +x**
+* Use **set** in a terminal to make it the standard behavior from that terminal 
+* Use the set option directly after the shebang in a script to use it in a script only: **#!/bin/bash -x**
+
+#### Using **shopt**
+* Additinoal options can be configured from a script using **shopt**
+  * **shopt +s extglob** enables extended globbing patterns
+* Using these options allows you to add features to the shell and your scripts
+  * **shopt -s checkjobs**
+  * **sleep 3600 &**
+  * **exit**
+* Use **shopt** without arguments to print a list of current options
+
+### 4.4 Using Patterns
+* Regular expressions are patterns that are used by specific tools
+* Globbing is for file patterns in Bash
+* Basic globbing applies to standard features
+  * \* matches zero or more characters
+  * ? matches any single character
+  * [...] matches any of characters listed.
+* Extended globbing (must be enabled with **shopt +s extglob) provides additional options
+  * ?(patterns): matches zero or one occurences of pattern
+  * *(patterns): matches zero or more occurences of pattern
+  * +(patterns): matches one more occurences of patterns
+  * @(patterns): matches one occurence of pattern
+
+#### Extended Globbing Examples
+* **shopt +s extglob**
+* **touch .txt e.txt ee.txt eee.ext**
+* **ls *.txt**
+* **ls ?(e).txt**
+* **ls *(e).txt**
+* **ls +(e).txt**
+* **ls @(e).txt**
+
