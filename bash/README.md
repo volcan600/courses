@@ -392,7 +392,9 @@ echo $?
 
 #### Understanding IFS
 * Commands like **cut**, and many more, work based on the Internal Field Separator (IFS)
-* IFS by default is a space
+* IFS by default is a space4
 * Many commands have options to define the IFS that should be used
 * cat /etc/passwd
-* 
+
+### 4.8 Using tail and head
+* **tail** and **head** are simple tools that allow you to print lines on top/bottom of a file
