@@ -398,3 +398,19 @@ echo $?
 
 ### 4.8 Using tail and head
 * **tail** and **head** are simple tools that allow you to print lines on top/bottom of a file
+
+### 4.9 Using sed
+* **sed** is the stream editor, which allows you to edit files even if no full screen is available
+* **sed** is extremely rich, but in most cases only some core features are used
+* **sed -n 5p /etc/passwd**
+* **sed -i s/old/new/g ~/myfile**
+* **sed -i -e '2d' ~/myfile**
+* **for i in *conf;do sed -i 's/old/new/g' $i;done**
+* pinfo sed has examples!
+
+### 4.10 Using awk
+#### AWK Examples
+* **awk** is great to filter text: **awk -F:'{print $4}' /etc/passwd**
+* same, but look for text "user":**awk -F: '/user/{prin t $4}' /etc/passwd**
+* Only print field 1 if field 3 has a value bigger than 999: **awk -F: '$3>999 {print $1}' /etc/passwd**
+
