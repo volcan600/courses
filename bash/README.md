@@ -398,3 +398,15 @@ echo $?
 
 ### 4.8 Using tail and head
 * **tail** and **head** are simple tools that allow you to print lines on top/bottom of a file
+
+### 4.11 Considering External Tools and Performance
+
+#### Best Pratice:Avoiding External Tools
+* Best pratice: try to avoid using external tools
+  * External tools and all the libraries they require need to be fetched from disk, which is relatively slow
+  * Also, external tools are operating system specfic, sometimes even distribution specific, which makes your script less portable
+* Use **type** to find out if a tools is external or not. Internal results can be **\<command\> is a shell keyword** or **\<command\> is a shell builtin** 
+* To measure performance, use **time myscript** to measure the amount of time it takes to run a script with or without external tools
+* you can check which libraries are using a command running **ldd $(which awk)
+
+
