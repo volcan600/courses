@@ -399,6 +399,7 @@ echo $?
 ### 4.8 Using tail and head
 * **tail** and **head** are simple tools that allow you to print lines on top/bottom of a file
 
+<<<<<<< HEAD
 ### 4.9 Using sed
 * **sed** is the stream editor, which allows you to edit files even if no full screen is available
 * **sed** is extremely rich, but in most cases only some core features are used
@@ -413,4 +414,16 @@ echo $?
 * **awk** is great to filter text: **awk -F:'{print $4}' /etc/passwd**
 * same, but look for text "user":**awk -F: '/user/{prin t $4}' /etc/passwd**
 * Only print field 1 if field 3 has a value bigger than 999: **awk -F: '$3>999 {print $1}' /etc/passwd**
+=======
+### 4.11 Considering External Tools and Performance
+
+#### Best Pratice:Avoiding External Tools
+* Best pratice: try to avoid using external tools
+  * External tools and all the libraries they require need to be fetched from disk, which is relatively slow
+  * Also, external tools are operating system specfic, sometimes even distribution specific, which makes your script less portable
+* Use **type** to find out if a tools is external or not. Internal results can be **\<command\> is a shell keyword** or **\<command\> is a shell builtin** 
+* To measure performance, use **time myscript** to measure the amount of time it takes to run a script with or without external tools
+* you can check which libraries are using a command running **ldd $(which awk)
+
+>>>>>>> d98dfdb1f871d10d5d21bff602a8697eb3c895d9
 
