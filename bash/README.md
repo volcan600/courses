@@ -430,4 +430,72 @@ echo $?
 * The list is alphabetically sorted by username
 * Any occurrence of /bin/bash us replaced with /bin/zsh
 * Changes are not written to /etc/passwd but to /tmp/myusers
-awk -F : '$3 > 999 { print $0 }' /etc/passwd | sort | sed 's/\/bin\/sh/\/bin\/zsh/'
+
+### Lesson 4 Lab Solution Using Linux Commands
+<details>
+  <summary>Lab 4 solution</summary>
+* awk -F : '$3 > 999 { print $0 }' /etc/passwd | sort | sed 's/\/bin\/sh/\/bin\/zsh/' > /tmp/myusers
+</details>
+
+## Module 2: Shell Scripting Fundamentals
+
+### 5.1 Choosing an Editor
+* To write shell scripts, you need an editor
+* This editor should offer syntax highlighting
+* Any common editor offers syntax highlighting for shell scripting
+* Commong Linux editor are **vim**, **gedit** and **nano**
+
+### 5.2 Shell Scripts and IDEs
+* An Integrated Development Environment (IDE) providees compehensive tools for programmers to develop software
+* IDEs should at least contain the following:
+  * Source code editor
+  * Build automation tool
+  * Debugger
+* As shell scripts don't go through the normal cycle of software development, there are not IDEs have been developed specifically for shell scripting
+* Just make sure you're using an editor with decent syntax highlighting
+
+### 5.3 Core Bash Script Ingredients
+* **Best practice:** make sure your scripts always include the following
+  * Shebang: the indicator of the shell used to run the script code on the first line of the script:
+    * **\#!/bin/bash** or **\#!/usr/bin/env bash** to identory Bash as the script interpreter
+    * Comment to explain what the script is doing
+    * White lines to increase readability
+    * Different block of code to easily distinguish between parts of the script
+#### About the Script Name
+* Script names are arbitrary
+* Extensions are not required but may be convenient for scripts users from non-Linux operating systems
+
+#### About the Scripts Location
+* Beacause of Linux $PATH restrictions, scripts cannot be executed from the current directory
+* Consider using **~/bin** to store scripts for personal use
+* Consider using **/usr/local/bin** for scripts that should be available for all users
+
+### 5.1 Running the Scripts
+* To run a script as a separate program, you need to set the execute permission: **chmod +x myscript**
+* If the directory containing the script is not in the $PATH, run it using **./myscript**
+* Scripts con also be started as an argument to the shell, in which case no execute permission and $PATH is needed: **bash myscript**
+* **Best practice**: to avoid confusion, include a shebang on the first line of the script and put it in the $PATH so that it can run as an individual program
+
+### 5.5 Finding Help About Scripting Components
+* **help** provides an overview of Bash internal commands, which are the core components of any shell script
+* **man bash** offers more detailed information about these commands
+* Online resources offer additional information and examples: the Advanced Bash Scripting Guide (https://tldp.org/LDP/abs?html/) has been the key reference for many years
+
+### Lesson 5 Lab: Writing your First Script
+* Write a script that clears your screen and prints the message "hello world"
+* Make sure this script meets all recommended syntax requirements
+* Also make sure the scripts is in your computers $PATH in such a way that any user can execute it
+
+### Lesson 5 Lab Solution Writing your First Script
+<details>
+  <summary>Lab 5 solution</summary>
+```shell
+#!/bin/bash
+
+# This script clean and run hello world command
+clear
+
+echo  "Hello World"
+```
+</details>
+
