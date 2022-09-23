@@ -489,13 +489,119 @@ echo $?
 ### Lesson 5 Lab Solution Writing your First Script
 <details>
   <summary>Lab 5 solution</summary>
-```shell
-#!/bin/bash
+    ```shell
+    #!/bin/bash
 
-# This script clean and run hello world command
-clear
+    # This script clean and run hello world command
+    clear
 
-echo  "Hello World"
-```
+    echo  "Hello World"
+    ```
 </details>
+
+### 6.1 About Terminology
+* An _argument_ is anyting that can be put behind the name of a command or script
+  * **ls -l /etc/** has 2 arguments
+* An _option_ is an argument that changes the behavior of the command or script, and its functionality is programmed into the command
+  * In **ls -l /etc, -l** is used as an option
+* A _positional parameter_ is another world for an argument
+* A _variable_ is a key with a name that can refer to a specific value
+* While being handled, all are further thread as variables
+
+### 6.2 Quoting
+#### Understanding Quoting Option
+* Escaping is the solution to take away special meaning from characters
+* To apply escaping, use quotes
+* Doble quotes are used to avoud interpretation of spaces
+  * **echo "my value"**
+* Single quotes are used to avoid interpretation of anything 
+  * **echo the current '$SHELL' is $SHELL**
+* Blackslash is used to avoid interpretation of the next character
+  * **echo the current \$SHELL is $SHELL**
+
+### 6.3 Defining and Using Variables
+* A local variable works in the current shell only
+* An environment variable is an operating system setting that is set while booting
+* Arrays are special multi-valued variables 
+  
+#### Bash Variable Data Types
+* Bash variables don't use data types
+* Variables can contain number, character or a string of characters
+* **declare** can be used to set specific variables attributes
+  * **declare -r ANSWER=yes** sets $ANSWER as a read-only variable
+  * **declare [a|-A] MYARRAY** is used to define an indexed or associative array
+* Using **declare -p** to find out which type of variable something is:
+  * compare **declare -p GROUPS** with **declare -p PATH**
+
+#### Defining Variables
+* Defining a variable can be easy: **key=value**
+* Variable are not case sensitive
+  * Environment variables, by default, are written in uppercase
+  * Local variables can be written in any case
+* After defining, a variable is available in the current shell only
+* To make variables available in subshell also, use **export key=value**. It's only for subshells, you want it to be avaiable in all shells, put it on .bashrc
+* To clear variable contents, use **key=** or use **unset**
+* Use **env** to get access to environment variables
+
+#### Using Variables
+* To use the current value assinged to a variable, put a **$** in front of the variable name
+* To better deal with variables, it is recomended, though not mandatory, to put the variable name between **\{ \}**
+  * **color=red**
+  * **echo $color**
+  * **echo ${color}**
+* To avoid confusion on specific types of variables, it is recommended, thought not mandatory, to put variable name between double quotes
+* **echo "${color}"**
+
+#### Special Variables
+* Bash works with some special variables, that have an automatically assigned value
+  * $RANDOM: a random number
+  * $SECONDS: the number of seconds this shell has been running
+  * $LINENO: the line in the current script
+  * $HISTCMD: the number of this command in history
+  * $GROUPS: an array that holds the names of groups that the current user is a member of
+     * (compare **echo \$GROUPS** versus **echo "${GROUPS[@]}"**
+  * $DIRSTACK: list of recently visited directories, also use **dirs** to display
+* Apart from these, there are standard variables such $BASH_ENV, $BASHHOPTS and more
+
+### 6.4 Defining Variables with read
+* When **read** is used, shell script execution will stop to read user input
+* The user input is stored in the variable that is provided as an argument to **read**
+  echo enter a value
+  read value
+  echo you have entered $value
+* If no variable name is set, the **read** result is stored in $REPLY
+* **read** can also be used without futher arguments
+* This can be useful for "Press Enter to continue" structures
+  * echo press enter to continue
+  * read
+  * echo continuing...
+
+#### Defining Multiple Variables with read
+* **read** can be used to define more than one variable at the same time
+  ```
+    #!/bin/bash
+    echo enter firstname, lastname and city
+    read firstname lastname city
+    echo nice to meet you $firstname $lastname from $city
+  ```
+
+### 6.5 Separating Code from Site Specific Data
+* Code - including shell scripts - should be portable. It means to run on multiple shells
+* That means that code should not include site specific information, which is referred to as decoupling
+* To implement decoupling in shell scripts, variables should be defined in sepate files that are used by "sourcing" (including) then in the main script
+* When a file is sourced, the contents of that file is included in the current shell, without starting a subshell
+
+#### Using Source
+* When sourcing variables, the files to be sourced should be stored separetly
+* Some Linux distibutions are doing this by using an /etc/sysconfig directory
+* To source a script, two approaches exists
+  * **source myvars** will source the file
+  * **.myvars** is an alternative way to do the same
+
+### 6.6 Viewing Variables
+* As variables can be set in different ways, viewing all curretly defined variables isn't easy
+* **set** shows all current variables, including functions and the values of the variables
+* **compgen -v** will show variables only and not their values
+
+
 
