@@ -603,5 +603,80 @@ echo $?
 * **set** shows all current variables, including functions and the values of the variables
 * **compgen -v** will show variables only and not their values
 
+### 6.7 Handling Script Arguments
+
+#### Understanding Script Arguments 
+* Script can be started with arguments to provide specific values while executing the script
+* _Arguments_ are also referred to as _Positional Parameters_
+* The first argument is stored in $1, the second argument is stored in $2 and so on
+* The script name itself is stored as $0
+* By default, a maximum of nine arguments can be defined this way
+* When using curly braces, more than nine arguments can be provided
+
+#### Referring to Script Arguments
+* Script arguments can be addressed individually
+* To address all arguments, use **$\@** or **$\***
+* Without quotes, **$\@** and **$\*** are indentical
+* With quotes, **$\@** expands to properly quoted arguments, and **$\*** makes all arguments into a single argument
+
+### 6.8 Using Shift
+* **shift** is used to shift the positional parameters to the left
+* **shift** can take a number as its arguments to shift the positinal parameters to the left by that number
+* Using **shift** can be useful to remove arguments after processing them
+* As an alternative, consider looping over all arguments using **while**
+
+### 6.9 Using Command Substitution
+* Command substitution is used to work the result of a command instead of a static value that is provided
+* Use this to refer to values that change frequently:
+  * **today=$(date +%d-%m-%y)**
+  * **mykernel=$(uname -r)**
+* Command substitution can be done in two ways that are not fundamentally different:
+  * **today=$(date +%d-%m-%y)**
+  * **today=\`date +%d-%m-%y\`
+
+### 6.10 Using Here Documents
+* A _here document_ is used as I/O redirection to feed a command list to an interactive program or command
+* A _here_ document is used as scripted alternative that can be provided by input redirection
+* Here documents are useful, as all the code that needs to be processed is a part of the script, ant there is no need process any external commands
+* Example:
+```bash
+#!/bin/bash
+lftp localhost << ENDSESSION
+ls
+put /etc/hosts
+ls
+quit
+ENDSESSION
+```
+
+### 6.11 Using Functions
+
+#### Understanding Functions
+* A function is a small block of reusable code that can be called from the script by referring to its name
+* Using functions is covenient when blocks of code are needed repeatedly
+* Functions can be defined in two ways:
+```bash
+function_name () {
+  commands
+}
+
+function function_name {
+
+}
+```
+* Use **set** to show a list of all functions currently available
+
+#### Using Function Arguments
+* Functions can work with arguments, which have a local scope within the function
+```bash
+#!/bin/bash
+hello () {
+  echo hello $1
+}
+hello bob
+```
+* Function arguments are not affected by passing positinal parameters to a script while executing it
+
+
 
 
