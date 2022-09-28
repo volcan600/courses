@@ -677,6 +677,38 @@ hello bob
 ```
 * Function arguments are not affected by passing positinal parameters to a script while executing it
 
+### Lesson 6 Lab: Working with Arguments and Variables
+* Write a script that allows you to install and start any service. The name of the service should be provided as an argument while starting the script.
+  
+### Lesson 5 Lab Solution Working with Variables and Arguments
+<details>
+  <summary>Lab 5 solution</summary>
+    ```bash
+    #!/bin/bash
 
+    if [ -z $2 ]
+    then
+            echo program name was not enter
+            exit 9
+    fi
 
+    # Indentify distribution
+    if grep -i 'ubuntu' /etc/os-release >/dev/null
+    then
+            PACKAGE_MANAGER=apt
+    elif grep -i 'centos' /etc/os-release >/dev/null
+    then
+            PACKAGE_MANAGER=yum
+    fi
+
+    # update package manager
+    sudo $PACKAGE_MANAGER update -y
+
+    # install package
+    sudo $PACKAGE_MANAGER install -y $1
+
+    # echo starting service
+    sudo systemctl start $1
+    ```
+</details>
 
