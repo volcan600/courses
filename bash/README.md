@@ -712,3 +712,54 @@ hello bob
     ```
 </details>
 
+### 7.1 Working with Parameter Substitution
+* Parameter substitution can be used to deal with missing parameters
+* Use it to set a default, or to display a message in case missing parameters were found
+```bash
+#!/bin/bash
+
+echo enter username or press enter to use default value
+read username
+echo ${username:-$(whoami)}
+```
+
+#### Using Parameter Substitution
+* If parameter is not set, use default (does NOT set it)
+  * **echo ${username:-$(whoami)}** uses result of whoami if $username is not set
+  * **filename=${1:-$DEFAULT_FILENAME}** uses values of $DEFAULT_FILENAME if $filename is not set
+* If parameter is not set, set default
+  * **echo ${username:=$(whoami)}** uses eresult of whoami if $username if not set
+  * **filename=${1:=$DEFAULT_FILENAME}** uses value of $DEFAULT_FILENAME if $filename is not set
+* If parameter is not set, print error_msg and exit script with exit status 1
+  * **echo ${myvar:?error_msg}**
+```bash
+#!/bin/bash
+echo take one
+echo ${var:-abc}
+echo ${var}
+
+echo take two
+echo ${var:=abc}
+echo ${var}
+```
+* example two
+``` bash
+#!/bin/bash
+
+echo check for existence of essential variables
+: ${HOSTNAME?} ${USER?}
+echo if you see this step 1 worked
+
+${COW?}
+echo you shouldnt see this
+```
+* example tree
+```bash
+#!/bin/bash
+echo ${1-?"Usage: $0 Argument"}
+echo string length of the argument is ${#1}
+```
+
+
+
+
