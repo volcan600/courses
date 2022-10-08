@@ -760,6 +760,52 @@ echo ${1-?"Usage: $0 Argument"}
 echo string length of the argument is ${#1}
 ```
 
+### 7.2 Using Pattern Matching Operators
+* The purpose of a pattern matching operator is to clean up a string
+* **${1#}** prints the string length of $1
+* **${1#patern}** removes the shortest match of pattern from the front end of $1
+* **${1##patern}** removes the longest match of pattern from the fron of $1
+* **${1%patern}** removes the shortest match of pattern from the back end of $1
+* **${1%%patern}** removes the longest match of pattern from the back end of $1
 
+#### Understanting Variable String Replacement
+* **${var/pattern/replacement}** is used to replace a pattern inside a variable
+* **${var//pattern/replacement}** perform a global replacement
+* **${var/#pattern/replacement}** will only replace if the variable starts with pattern
+* **${var/%pattern/replacement}** will only replace if the variable ends with pattern
 
+### 7.3 Using Patterns and Extended Globbing
+* Extended globbing can be used to analyze file patterns in a smart way
+* See **patternglob** in the course Git repository
+* See **removepattern** in the course Git repository
 
+### 7.4 Calculating
+* Bash offers different solutions for calculation with integers:
+  * **let expression**
+  * **expr expression**
+  * **$((expresion))**
+* Of these 3, the $((...)) method is preferred
+* All work with the following operators
+  * +
+  * -
+  * \*
+  * /
+  * %
+
+#### Bash Calculation Examples
+* **let** is bash internal
+  * **let a=1+2**
+  * **echo $a**
+  * **let a++**
+  * **echo $a**
+* **expr** is an external command that can be used in scripts, but it is not used much anymore
+* **$((...))** allows you to put the calculation between parenthesis 
+  * **echo $((2 * 3))**
+
+#### Advanced Calculation Tools
+* **bc** is an advanced calculation tool that allows you to work with decimals
+  * **bc** is typically used in pippes: **echo "12/5" | bc**
+  * to print decimals in the result, use **-l: echo "12/5" | bc -l**
+  * **bc** also offers access to built-in mathematical functions: **echo "sqrt(1000)" | bc -l**
+* **factor** decomposes an integer into prime factor
+  * **factor 399**
