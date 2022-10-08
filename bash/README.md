@@ -176,6 +176,7 @@ echo $?
 * Type **cat /etc/profile | less** to print the contents of the /etc/profile file
 * Type **alias** to get a list of aliases that are set
 * Use **help** to show a list of internal commands
+* bash -x ./script it used for debug or debugging
 
 #### Lesson 2 Lab: Solution
 <details>
@@ -680,9 +681,9 @@ hello bob
 ### Lesson 6 Lab: Working with Arguments and Variables
 * Write a script that allows you to install and start any service. The name of the service should be provided as an argument while starting the script.
   
-### Lesson 5 Lab Solution Working with Variables and Arguments
+### Lesson 6 Lab Solution Working with Variables and Arguments
 <details>
-  <summary>Lab 5 solution</summary>
+  <summary>Lab 6 solution</summary>
     ```bash
     #!/bin/bash
 
@@ -809,3 +810,110 @@ echo string length of the argument is ${#1}
   * **bc** also offers access to built-in mathematical functions: **echo "sqrt(1000)" | bc -l**
 * **factor** decomposes an integer into prime factor
   * **factor 399**
+
+### 7.4 Using tr
+* **tr** is an external utility allows for translation of characters
+  * **echo hello | tr [a-z] [A-Z]**
+  * **echo hello | tr [:lower:][:upper:]**
+  * **echo how are you | tr [:space:] '\t'**
+
+#### Change Case in Variables
+* Bash variables can modify case using ^^(uppercase) and ,,(lowercase)
+  * **color=red;echo ${color^^}**
+  * **color=BLUE;echo ${color,,}**
+
+### Lesson Lab Transforming Input
+* You have performed a wring scripting manipulation, and as a result all files have been renamed with the extension .txt. Write a script that renames the file to the filename without the extension.
+
+### Lesson 7 Lab Solution Transforming Input
+<details>
+  <summary>Lab 7 solution</summary>
+    ```bash
+    #!/bin/bash
+
+    for i in *
+    do
+        mv $i ${i%.*}
+    done
+    ```
+</details>
+
+### 8.1 Using test
+* **test** is the foundation of many **if** statements
+* **test** is an external command that allows you to perform different types of test
+  * Expression tests: test can evaluate the binary outcome of an expression, which is a logical test by itself
+  * String tests: allow you to evaluate if a string is present or absent, and compare one string to another
+  * Integer tests: allow you to compare integers, which includes operations like bigger than, smaller than
+  * File tests: allow you to test all kind of properties of files
+* **test** is typically used in conditional statements
+* **test condition** can also be written as **[ condition ]**
+
+#### Using Simple **if** Statements
+* **if** used to verify that a condition is true
+```bash
+if true
+then
+  echo command executed successfully
+fi
+```
+* The condition is a command that returned an exit code 0, or a test that completed successfully:
+  * **if [ -f /etc/hosts ]; then echo file exists;fi**
+
+#### Using **||** and **&&**
+* Logical test are **if then else** tests written in a different way
+* Logical AND: the structure is **a && b**, which results in **b** being executed when **a** is successful
+* Logical OR: the structure is a **a || b**, which results in **b** being executed only if **a** is not successful
+* Logical operators can be embedded in **if** statements to test multiple conditions
+  * **if [ -d $1 ] && [ -x $1 ];then echo $1 is a directory and has execute;fi**
+
+#### Rewriting **if** Statements to Logical Test
+```bash
+if [ -f /etc/hosts ]
+then
+    echo file exists
+fi
+```
+```bash
+[ -f /etc/hosts ] && file exists
+```
+
+#### Understanding **[[condition]]**
+* A regular test is written as **[ condition ]**
+* The enhanced version is written as **[[ condition ]]**
+* **[[ condition ]]** is a Bash internal, and offers features not offered by **test**
+* Because it is a Bash internal, you may not find it in other shells
+* Because of the lack of compatibility, many scripters prefer using **test** instead
+
+#### **[[ condition ]] Examples
+* **[[$VAR1 = yes && $VAR2 = red ]]** is using a conditional statement within the test
+* **[[ 1<2 ]]** tests if 1 is smaller than 2
+* **[[ -e $b ]]** will test is $b exists. If $b is a file that contains spaces, using [[]] won't require you to use quotes
+* **[[ $var = img* && ($var = *.png || $var = *.jpg)]] && echo $var starts with img and ends with .jpg or .png**
+
+### 8.5 Using if...then...else
+* **else** can be used as an extension to **if** statements to perform an action of the first condition is not true
+* Notice that instead of using **else**, independent statements can be used in some cases
+* See the differences between **else1** and **else2** in the course Git repo
+```bash
+#!/bin/bash
+if [ -z $1 ]
+then
+    echo no argument provided please try again
+    exit 1
+fi
+echo you only get here if an argument was provided
+```
+
+### 8.6 Using if...then...else with elif
+* **elif** can be added to the **if...then...else** statements to add a second condition
+```bash
+#!/bin/bash
+if [ -d $1 ];then
+  echo $1 is a directory
+elif [ -f $1 ];then
+  echo $1 is a file
+else
+  echo $1 is an unknown entity
+fi
+```
+
