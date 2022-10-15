@@ -917,3 +917,110 @@ else
 fi
 ```
 
+### Lesson 8 Lab Using if...then...else
+* Write a script that will alert if available disk space on the / partition or volume is less than 3GB, or if less than 512 MB RAM is listed as free.
+* If both of these conditions are true, the script should print: WARNING: low system resource.
+* If only low disk space is available, the script should print: WARNING: low disk space available
+* If only low memory is available, the script should print WARNING: low memory available
+* If neither of these low conditions is the case, the script should print the message: all is good
+
+### Lesson 8 Lab Solution Using if...then...else
+<details>
+  <summary>Lab 8 solution</summary>
+    ```bash
+    #!/bin/bash
+
+    # set variables to contain vales
+    DISKFREE=$(df -m | grep '/$' | awk '{ print $4 }' )
+    MEMFREE=$(free -m | grep Mem | awk '{ print $4 }' )
+
+    echo DISKFREE
+    echo MEMFREE
+    # Check if disk AND memory are low
+    if [ $DISKFREE -le $(( 1024 * 3 )) && $MEMFREE -le 512 ]
+    then
+        echo WARNING: low system resources
+        exit 9
+    fi
+    
+    # Check if only disk is low
+    if [$DISKFREE -le $(( 1024 * 3 ))]
+    then
+        echo WARNING: low disk space
+        exit 8
+    fi
+
+    # check if only memory is low
+    if [$MEMFREE -le 512 ]
+    then
+        echo WARNING: low memory detected
+        exit 7
+    fi
+
+    # print message of all is good
+    echo your system resources are all fine
+    ```
+### 9.1 Applying Conditionals and Loops
+* **if...then...else** is used to execute commands if a specific condition is true
+   * **[ -z $1 ]; then echo hello;fi**
+* **for** is used to execute a command on a range of items
+   * **for i in "$@"; do echo $i;done**
+* **while** is used to run a command as long as condition is true
+  * **while true;do true;done**
+* **until** is used to run a command as long as a condition is not true
+  * **until who | grep $1;do echo $1 is not logged in;done**
+* **case** is used to run a command if a specific situation is true
+
+### 9.2 Using for
+* **for** is used to iterate over a range of items
+* This is useful for handling a range of argumments, or a series of files
+* Example:
+```bash
+for i in {115...127}; do echo $i; done
+for i in {115...127}; do ping -c 192.168.100.$i; done
+```
+
+### 9.3 Using case
+* **case** is used to check a specific number of cases
+* It is useful to provide scripts that work with certain specific arguments
+* It has been used a lot in legacy Linux init scripts
+* Notice that **case** is case sentive, consider using **tr** to convert all to a specific case
+* Example:
+```bash
+echo are you good?
+
+read GOOD
+
+GOOD=$(echo $GOOD | tr [:upper:] [:lower:])
+
+case $GOOD in
+yes|oui)
+        echo that\'s nice
+        ;;
+no)
+        echo that\'s not so nice
+        ;;
+*)
+        echo okay
+        ;;
+esac
+```
+### 9.4 Using while and until
+* **while** and **until** are used to run a command based on the exit status of an expression
+* **while** will run the command as long the expression is true
+* **until** will run the command as long as the expression is not true
+Examples:
+```bash
+#!/bin/bash
+# until example
+until who |grep lind
+do
+  echo user not logged in
+  sleep 5
+done
+
+echo user just logged in
+
+# while
+while true, do true; done
+```
