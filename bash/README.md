@@ -1024,3 +1024,712 @@ echo user just logged in
 # while
 while true, do true; done
 ```
+
+### 9.5 Using break and continue
+* **break** is used to leave a loop straight away
+* Using **break** is useful if an exceptional situation arises
+* **continue** is used to stop running through this iteration and begin the next iteration
+* Using **continue** is useful if a situation was encontered that makes it impossible to proceed
+*  Break example:
+```bash
+#!/bin/bash
+# backup script that stops if insufficient disk space is available
+if [ -z $1 ]
+then
+    echo enter the name of a directory to back up
+    read dir
+else
+    dir=$1
+fi
+
+[ -d ${dir}.backup ] || mkdir ${dir}.backup
+for file in $dir/*
+do
+  used=$( df $dir | tail -1 | awk '{ print $5 }' | sed 's/%//' )
+  if [ $used -gt 98 ]
+  then
+      echo stopping: low disk space
+      break
+  fi
+
+  cp $file ${dir}.backup
+done
+```
+* Continue example:
+```bash
+#!/bin/bash
+
+# convert file names to lower case if required
+
+FILES=$(ls)
+
+for file in $FILES
+do
+        if [[ "$file" != *[[:upper:]]* ]]; then
+                echo "$file" doesn\'t contain uppercase
+                continue
+        fi
+
+        OLD="$file"
+        NEW=$(echo $file | tr '[:upper:]' '[:lower:]')
+
+        mv "$OLD" "$NEW"
+```
+
+### Lesson 9 Lab: Using Conditionals and Loops
+* Write a script that can be used to install, start and enable services
+* The names of the services must be provided as command line arguments.
+* If no command line arguments were provided while starting the script, the script should show an error message.
+* Before starting the next service, the script should check that at least 256MB of RAM is still available. If that is not the case, the script should stop.
+
+### Lesson 9 Using Conditionals and Loops
+<details>
+  <summary>Lab 9 solution</summary>
+    ```bash
+    #!/bin/bash
+    if [ -z $1 ]
+    then
+          echo you have to provide at least one argument
+          exit 3
+    fi
+    
+    MEMFREE=$(free -m | grep Mem | awk '{ print $4 }')
+
+    if [ $MEMFREE -lt 256 ]
+    then
+          echo insufficient memory available
+          exit 4
+    fi
+
+    # install start and enable services
+    sudo apt install -y "$@"
+
+    for s in "$@"
+    do
+          sudo systemctl enable --now $s
+    done
+    ```
+### 10.1 Working with Options
+* An _option_ is an argument that changes script behavior
+* Use **while getopts "ab:" opts** to evaluate options a and b, and while evaluating them, put them in a temporary variable opts
+* Next, use **case $opts** to define what should happend if a specific option was encountered
+```bash
+#!/bin/bash
+while getopts "hs:" arg; do
+case $arg in
+        h)
+                echo "usage"
+                ;;
+        s)
+                strength=$OPTARG
+                echo $strength
+                ;;
+        esac
+done
+```
+
+```bash
+#!/bin/bash
+#makeusr [-u uid] [-g gid] [-i info] [-h homedir] [-s shell] username
+        function usage
+        {
+                        echo ‘usage: makeusr [-u uid] [-g gid] [-i info] [-h homedir] ‘
+                        echo ‘[-s shell] username
+                        exit 1
+        }
+
+        function helpmessage
+        {
+                        echo "makeusr is a script ... "
+                        echo "blablabla"
+        }
+
+        while getopts "u:g:i:h:s:" opt; do
+                        case $opt in
+                                u ) uid=$OPTARG ;;
+                                g ) gid=$OPTARG ;;
+                                i ) info=$OPTARG ;;
+                                h ) home=$OPTARG ;;
+                                s ) shell=$OPTARG ;;
+                                ? ) helpmessage ;;
+                                * ) usage ;;
+                        esac
+        shift $(($OPTIND -1))
+        done
+
+        if [ -z "$1" ]; then
+                        usage
+        fi
+
+        if [ -n "$2" ]; then
+                        usage
+        fi
+
+        if [ -z "$uid" ]; then
+                        uid=500
+                        while cut -d : -f3 /etc/passwd | grep -x $uid
+                        do
+                                uid=$((uid+1)) > /dev/null
+                        done
+        fi
+
+        if [ -z "$gid" ]; then
+                        gid=$(grep users /etc/group | cut -d: -f3)
+        fi
+
+        if [ -z "$info" ]; then
+                        echo Provide information about the user.
+                        read info
+        fi
+
+        if [ -z "$home" ]; then
+                        home=/home/$1
+        fi
+
+        if [ -z "$shell" ]; then
+                        shell=/bin/bash
+        fi
+
+        echo $1:x:$uid:$gid:$info:$home:$shell >> /etc/passwd
+        echo $1:::::::: >> /etc/shadow
+        mkdir -p $home
+        chmod 660 $home
+        chown $1:users $home
+        passwd $1
+```
+
+### 10.2 Using Variables in Functions
+* No matter where they are defined, variables always have a global scope even if definedin a function
+* Use the **local** keyword to define variables with a local scope inside of a function
+* See **funcvar** for an example
+* Example:
+```bash
+#!/bin/bash
+var1=A
+
+my_function () {
+        local var2=B
+        var3=C
+        echo "inside function: var1: $var1, var2: $var2, var3: $var3"
+}
+
+echo "before runninng function: var1: $var1, var2: $var2, var3: $var3"
+
+my_function
+
+echo "after running function: var1: $var1, var2: $var2, var3: $var3"
+```
+
+### 10.3 Defining Menu Interfaces
+* The **select** statement can be used to select a menu
+* Use **PS3** to define a menu prompt
+* The **select** statement embeds a **case** statement
+* After executing a menu option, you will get back to the menu
+* Use **break** to get out of the menu
+* **$REPLY** is a default variable that contains the string that was entered at the prompt
+* The select statment can refer to the choices directly. If the choices contain spaces, you'll need to use an array instead
+* Example:
+```bash
+#!/bin/bash
+
+PS3='Enter your choice: '
+options=("Option 1" "Option 2" "Option 3" "Quit")
+
+select opt in "${options[@]}"
+do
+        case $opt in
+                "Option 1")
+                        echo "you have selected option 1"
+                        ;;
+                "Option 2")
+                        echo "you have selected option 2"
+                        ;;
+                "Option 3")
+                        echo "you have selected $REPLY with is $opt"
+                        ;;
+                "Quit")
+                        break
+                        ;;
+                *) echo "invalid option $REPLY";;
+        esac
+done
+```
+
+### 10.4 Using trap
+* **trap** is used to run a command while catching a signal
+* **SIGKILL (kill -9)** cannot be trapped
+* Signals are specific software interrupts that can be sent to a command
+* Use **man 7 signal** or **trap -l** for an overview
+####
+* **trap** is useful to run commands upon receiving a signal
+* Use it to catch signals that you don't want to happen in the script, like INT
+* Or use it on EXIT, to define tasks that should happen when the script properly exists
+  * This is stonger that just running a comand at the end of the script, because that will only run if the script reaches the end
+* Example:
+```bash
+#!/bin/bash
+trap "echo ignoring signal" SIGINT SIGTERM
+echo pid is $$
+
+while :
+do
+        sleep 60
+done
+```
+* Example two:
+```bash
+#!/bin/bash
+tempfile=/tmp/tmpdata
+touch $tempfile
+ls -l $tempfile
+trap "rm -f $tempfile" EXIT
+```
+
+### Lesson 10 Lab Writing a Menu
+* Write a menu with the name operator. It should meet the following requirements:
+  * The menu offers options to see available disk space, available RAM and users currently logged in
+  * It should not be possible to exit from the menu using Ctrl-C
+
+### Lesson 10 Lab Writing a Menu
+<details>
+  <summary>Lab 10 solution</summary>
+    ```bash
+    #!/bin/bash
+
+    PS3="Enter your choice:"
+    option=("See Disk Space" "Check Memory" "List current users" "Quit")
+
+    trap "ignoring ctrl-c" SIGINT
+    
+    select opt in "${options[@]}"
+    do
+            case $opt in
+                    "See Disk Space")
+                            df -h
+                            ;;
+                    "Check Memory")
+                            free -m
+                            ;;
+                    "List current user")
+                            who
+                            ;;
+                    "Quit")
+                            break
+                            ;;
+                    *) echo "invalid option $REPLY";;
+            esac
+    done
+    ```
+
+### 11.1 Understanding Why Arrays are Useful
+* The string is the default type of parameter
+* Integers are parameter types that can be used in calculations
+* An array is a parameter that can hold multiple values, stored as key/value pairs, where each value can be addressed individually
+* Strings may contain multiple elements, but there is no way that always works to find all these elements
+* Particularly, files containing spaces in their names have issues
+  * string: **file=$(ls *.doc);cp $files~/backup**
+  * array: **files=(*.txt);cp "${files[@]}"~/backup**
+* To ensure that lists of things that need to be processed always work, use arrays
+
+### 11.2 Understanding Array Types
+* _index arrays_ address a value by using an index number
+  * Index arrays are very common
+  * The **declare** command does not have to be used to define an index array
+* Associative arrays address a value by using a name
+  * Associative arrays provide the benefit of using meaningful keys
+  * Associative arrays are relatively new
+  * While using associative arrays, you must use **declare -A**
+
+### 11.3 Using Arrays
+* Indexed arrays are the most common, and are defined much like variables, where all elements are put between braces
+* In the indexed array, the key is an index value, starting with index value 0
+  * my_array=(one two three)
+* Don't confuse with command substitution
+  * myname=$(whoami)
+* Associative arrays exists since Bash 4.0: they use user-defined strings as the key
+  * ${value[XLY]}
+  * Ordering in associative arrays can not be guaranteed!
+#### Using Arrays
+* Arrays should always be used with quotes, without quotes you'll lose the array benefits and your script may fail over spaces
+* **"${myarray[@]}"** refers to all values in the array
+* **"${myarray[1]}"** refers to index value 1 (the second element)
+* **"${!myarray[@]}"** refers to all keys in the array
+* Example:
+```bash
+#!/bin/bash
+my_array=( a b c )
+
+# print index value 1
+echo ${my_array[1]}
+
+# print all items in the array
+echo ${my_array[@]}
+echo ${my_array[*]}
+
+# print all index values and not their value
+echo ${!my_array[@]}
+
+# print the length of the array
+echo ${#my_array[@]}
+
+# loop over all items in the array; printing all keys as well as all values
+for i in "${!my_array[@]}"
+do
+        echo "$i" "${my_array[$i]}"
+done
+
+# loop on just the values and not the keys
+for i in "${my_array[@]}"
+do
+        echo "$i" 
+done
+
+# adding a value at a specific position
+# using 9 to make sure it is last
+my_array[9]=d
+echo ${my_array[@]}
+echo ${my_array[9]}
+
+# adding items to the end of the array, using the first available index
+my_array+=( e f )
+for i in "${!my_array[@]}"
+do
+        echo "$i" "${my_array[$i]}"
+done
+```
+#### Using **declare** to Define Arrays
+* To create an indexed array, you can just start by assigning values to it
+  * **my_array=(cow goat)**
+* Optionally, you can declare it using **declare -a**
+* To create an associative array, you need to use **declare -A**
+  * **declare -A my_aaray**
+  * **my_aaray=([value1])=cow [value2]=sheep)**
+
+### 11.4 Reading Command Output into Arrays
+* Use **mapfile** to fill an array with the result of a command
+  * **mapfile -t my_array <<(my_command)**
+* Otherwise, you can use a loop that adds each item in the output item-by-item
+```bash
+my_array=()
+while IFS=read -r line;do
+    my_array+=($"line")
+done<<(my_command)
+```
+* **IFS** sets the internal Field Separator to a space for just the **read** command
+* **read -r** tells read not to interpret backslashes as escape characters
+* As long as elements are found in **my_command**, the loop continues
+* Example:
+```bash
+#!/bin/bash
+
+# scanning hosts on $NETWORK
+echo enter the IP address of the network that you want to scan for available hosts
+read NETWORK
+
+# enabling some debugging so that we see what happens
+set -x 
+hosts=()
+# below IFS is set at the same line as the read statement to make sure it affects the read statement only
+# IFS is set to a space to make sure that as long as it finds a space after an item the script continues
+while IFS= read -r line; do
+        hosts+=( "$line" )
+done < <( nmap -sn ${NETWORK}/24 | grep ${NETWORK%.*} | awk '{ print $5 }')
+set +x
+
+# the two lines below are for debugging only
+echo press enter to continue
+read
+
+# and here we check that the array works as intended
+for value in "${hosts[@]}"
+do
+        echo $value
+done
+```
+### 11.5 Reading Command Output into Arrays- Alternative Approach
+* Example:
+```bash
+#!/bin/bash
+
+# generating SSH key for local user
+[ -f $HOME/.ssh/id_rsa ] || ssh-keygen
+
+# scanning hosts on $NETWORK
+echo enter the IP address of the network that you want to scan for available hosts
+read NETWORK
+
+# you can fill an array with command output in two ways. The lines below are not as efficient but also work
+#hosts=()
+#while IFS= read -r line; do
+#       hosts+=( "$line" )
+#done < <( nmap -sn ${NETWORK}/24 | grep ${NETWORK%.*} | awk '{ print $5 }')
+
+# alternative notation
+mapfile -t hosts < <(nmap -sn ${NETWORK}/24 | grep ${NETWORK%.*} | awk '{ print $5 }')
+
+# this line shows debug information; useful while developing but can be removed now
+for value in "${hosts[@]}"
+do
+        echo $value
+done
+
+PS3='which host do you want to setup? (Ctrl-C to quit) '
+select host in "${hosts[@]}"
+do
+        case $host in
+                *)
+                        echo you selected $host
+                        set -v
+                        ssh-copy-id root@$host
+                        scp /etc/hosts root@$host:/etc
+                        set +v
+                        echo this is enough for the proof of concept script
+                        ;;
+        esac
+
+done
+```
+
+### 11.6 Looping through Arrays
+* Example:
+```bash
+#!/bin/bash
+# poem.sh: Pretty-prints one of the ABS Guide author's favorite poems.
+# credits: TLDP Advanced Bash Scripting Guide
+
+# Lines of the poem (single stanza).
+Line[1]="I do not know which to prefer,"
+Line[2]="The beauty of inflections"
+Line[3]="Or the beauty of innuendoes,"
+Line[4]="The blackbird whistling"
+Line[5]="Or just after."
+# Note that quoting permits embedding whitespace.
+
+# Attribution.
+Attrib[1]=" Wallace Stevens"
+Attrib[2]="\"Thirteen Ways of Looking at a Blackbird\""
+# This poem is in the Public Domain (copyright expired).
+
+echo
+
+tput bold   # Bold print.
+
+for index in 1 2 3 4 5    # Five lines.
+do
+  printf "     %s\n" "${Line[index]}"
+done
+
+for index in 1 2          # Two attribution lines.
+do
+  printf "          %s\n" "${Attrib[index]}"
+done
+
+tput sgr0   # Reset terminal.
+            # See 'tput' docs.
+
+echo
+
+exit 0
+```
+
+### Lesson 11 Lab: Using Arrays
+* Use arrays to write a roster script. The script should do the following:
+  * For each day of the week, prompt the user "enter janitor name for day"
+  * Store the names in an associative array, where weekdays are used as the key, and janitor names as the value
+  * After prompting for the janitor names, the script should print the roster for this week
+
+### Lesson 11 Lab: Using Arrays Solution
+<details>
+  <summary>Lab 11 solution</summary>
+    ```bash
+    #!/bin/bash
+
+    # use readarray to create the associative names
+    echo enter name for monday
+    read name1
+    echo enter name for tuesday
+    read name2
+    echo enter name for wednesday
+    read name3
+    echo enter name for thursday
+    read name4
+    echo enter name for friday
+    read name5
+    echo enter name for saturday
+    read name6
+    echo enter name for sunday
+    read name7
+
+    declare -A roster
+    roster[monday]=$name1
+    roster[tuesday]=$name2
+    roster[wednesday]=$name3
+    roster[thursday]=$name4
+    roster[friday]=$name5
+    roster[saturday]=$name6
+    roster[sunday]=$name7
+
+    # print the names of responsible janitor for each day
+    for i in "${!roster[@]}"
+    do
+      echo "$i" "${roster[$i]}"
+    done
+    ```
+    ```bash
+    #!/bin/bash
+
+    # use readarray to create the associative names
+    echo enter names for Janitors from Mon-Sun \(seven names required\)
+    read name1 name2 name3 name4 name5 name6 name7
+
+    declare -A roster; declare -a order
+    roster[monday]=$name1; order+=( "monday" )
+    roster[tuesday]=$name2; order+=( "tuesday" )
+    roster[wednesday]=$name3; order+=( "wednesday" )
+    roster[thursday]=$name4; order+=( "thursday" )
+    roster[friday]=$name5; order+=( "friday" )
+    roster[saturday]=$name6; order+=( "saturday" )
+    roster[sunday]=$name7; order+=( "sunday" )
+
+    # print the names of responsible janitors for each day
+    for i in "${order[@]}"
+    do
+            echo "$i" "${roster[$i]}"
+    done
+    ```
+### 12.1 Developing Step-by-Step
+* Star writing the bigger structure of the script, using comment signs
+* Next, write and test each part of the script separately
+* While doing so, try not to use commands that change anything, use **echo** instead
+* Use white lines to keep the script readable
+
+### 12.2 Using set Options
+* Bash **set** can be used in a script to enable/disable specific functionality
+  * **set** options can be specified in two ways: using an option, or using **set -o option-name**
+  * compare **set -e** and **set -o errexit**
+* Use **set -x** to enable an option
+* Use **set +x** to disable an option
+  * **-e**: Exit the script when a commands fails
+  * **-i**: runs the script in interactive mode
+  * **-v**: runs a script in verbose mode
+  * **-x**: runs a script in verbose mode while expanding commands
+### Placing set Commands
+* The advantage of **set** is that you can enable an option before a specific section and disable it again after that section
+* Example:
+```bash
+#!/bin/bash
+
+set -e
+
+false
+echo do we see this
+```
+### 12.3 Including Debug Information
+* As discussed before, options can be used to make a script more verbose
+* Alternatively, the scripter can manually include debug information at critical points
+* To do so, use **echo** and **read**
+  * **echo just added the user, press enter to continue**
+  * **read**
+* Notice that **read** is used without further argument, as the answer to the **read** prompt is not used anyway
+* Use manually inserted debug information while developing, and don't forget to clean up once done
+#### Using echo
+* While testing script, consider using **echo** with all commands you want to use
+* Using **echo** avoids your script from making modifications to the system, once confirmed that all works as expected, you can clean up the **echo** statements
+
+### 12.4 Writing Debug Information to a File
+* When using **bash -x**, debug information is sent to STDERR
+* Since Bash 4.1, the BASH_XTRACEFD variable can be set to write debug inforamtion to a file
+* This variable defines a file descriptor that is next redirected to a specific file
+* When using BASH_XTRACEFD, you'll need a custom file descriptor
+* To define this custom file descriptor, use **exec**
+* **exec 15>myfile** is sending all that is sent to FD 15 to the file myfile
+* Next, BASH_XTRACEFD is assigned to use this file descriptor
+* Example:
+```bash
+#!/bin/bash
+
+# Use FD 15 to capture the debug stream caused by "set -x":
+exec 15>/tmp/bash-debug.log
+# Tell bash about it  (there's nothing special about 15, its arbitrary)
+export BASH_XTRACEFD=15
+
+# turn on debugging:
+set -x
+
+# run some commands:
+cd /etc
+find 
+echo "that was it"
+
+# Close the debugging:
+set +x
+
+# Close the file descriptor
+exec 15>&-
+
+# See what we got:
+cat /tmp/bash-debug.log
+```
+### 12.5 Running bash -x
+* Instead of using the **set** option, you can use **bash -x** from the command line
+* Using **bash -x** is not as elegant, as it will debug the entire script and you might just want to focus on a specific section
+* The benefit however is that you don't have to modify the script code while using **bash -x** 
+
+### Lesson 12 Lab  Using Debug Techniques
+* Script11 contains a few errors. Use the appropriate debug techniques to fix it
+* Examples: 
+```bash
+#!/bin/bash
+
+COUNTER=$1
+COUNTER=$(( COUNTER * 60 ))
+
+minusone()({
+        COUNNTER=$(( COUNTER - 1 ))
+        sleep 1
+}
+
+while [ $COUNTER -gt 0 ]
+do
+        echo you still have $COUNTER seconds left
+        minusonne
+done
+
+[ $COUNTER = 0 ] && echo time is up && minusone
+[ $COUNTER = "-1" ] && echo you now are one second late && minusone
+
+while true
+do
+        echo you now are ${COUNTER#-} seconds late
+        minusone
+done
+```
+### Lesson 11 Lab: Using Arrays Solution
+<details>
+  <summary>Lab 11 solution</summary>
+    ```bash
+    #!/bin/bash
+
+    COUNTER=$1
+    COUNTER=$(( COUNTER * 60 ))
+
+    minusone(){
+            COUNTER=$(( COUNTER - 1 ))
+            sleep 1
+    }
+
+    while [ $COUNTER -gt 0 ]
+    do
+            echo you still have $COUNTER seconds left
+            minusone
+    done
+
+    [ $COUNTER = 0 ] && echo time is up && minusone
+    [ $COUNTER = "-1" ] && echo you now are one second late && minusone
+
+    while true
+    do
+            echo you now are ${COUNTER#-} seconds late
+            minusone
+    done
+    ```
