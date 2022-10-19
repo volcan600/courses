@@ -1733,3 +1733,79 @@ done
             minusone
     done
     ```
+
+### 13.1 Monitoring CPU Utilization
+```bash
+#!/bin/bash
+# Script that monitors the top-active process. The script sends an email to the user root if
+# utilization of the top active process goed beyond 80%. Of course, this script can be tuned to 
+# do anything else in such a case.
+#
+# Start the script, and it will run forever.
+
+while true
+do
+        # Check every 60 seconds if we have a process causing high CPU load
+        sleep 60
+        USAGE=`ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1 | awk '{ print $1 } '`
+        USAGE=${USAGE%.*}
+        PID=`ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1 | awk '{print $2 }'`
+        PNAME=`ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1 | awk '{print $3 }'`
+
+        # Only if we have a high CPU load on one process, run a check within 7 seconds
+        # In this check, we should monitor if the process is still that active
+        # If that's the case, root gets a message
+        if [ $USAGE -gt 80 ] 
+        then
+                USAGE1=$USAGE
+                PID1=$PID
+                PNAME1=$PNAME
+                sleep 7
+                USAGE2=`ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1 | awk '{ print $1 } '`
+                USAGE2=${USAGE2%.*}
+                PID2=`ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1 | awk '{print $2 }'`
+                PNAME2=`ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1 | awk '{print $3 }'
+
+                # Now we have variables with the old process information and with the
+                # new information
+
+                [ $USAGE2 -gt 80 ] && [ $PID1 = $PID2 ] && mail -s "CPU load of $PNAME is above 80%" root@blah.com < .
+        fi
+done
+```
+
+### 13.2 Rebooting and Picking up After Reboot
+* For some tasks, complety different scripted solutions can be developed
+* Consider the 2 scripts developed to pick up tasks after a system reboot
+* One of the scripts has a more traditional approach, whereas the other script interfaces with systemd
+```bash
+cat << REBOOT > /usr/local/completeme.sh
+#!/bin/bash
+echo DONE > /tmp/after-reboot
+systemctl disable completeme
+REBOOT
+chmod +x /usr/local/completeme.sh
+cat << SERVICE > /etc/systemd/system/completeme.service
+[unit]
+Description=CompleteMe
+
+[Install]
+Type=simple
+WorkingDirectory=/usr/local
+ExecStart=/usr/local/completeme.sh
+SERVICE
+
+systemctl daemon-reload
+systemctl enable completeme
+
+reboot
+```
+
+### 13.3 Using Advanced Pattern Matching Operators
+* Pattern Matching Operators can be used to remove patterns from the beggining, or from the end of a string
+* But how would you remove a pattern from the middle?
+```bash
+#!/bin/bash
+#
+# displays current day, month, year
+DATA=$(date +%d-%m%)
