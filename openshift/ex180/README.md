@@ -1358,3 +1358,63 @@ cat /etc/proc/26/cmdline
     oc edit svc <serviceName>
     ```
 </details>
+
+### 11.1 Exam Tasks Overview
+* Set up a RHEL 8 Host with a graphical user interface
+* Install the appropriate tools to work with Podman, buildah, and skopeo
+* To test the setup, run the bitnami/nginx container
+
+#### Task 2: Working with Standard Images
+* Use your developers.redhat.com credentials to login to the RedHat image registries
+* Use the appropriate command to inspect the mariadb image without downloading it
+* Download the image without running it
+* Inspect the image to find out which command is started as the default command
+* Run the image as a container
+* After starting it, open an interactive shell on the container and find which operating system and kernel it uses
+
+#### Task 3: Managing Images
+* Start the bitnami/nginx image using the name mynginx
+* Add the file /tmp/hello and ensure that changes to the image are saved
+* Save the modified image to a tar archive
+* Remove the image from the local image list
+* Restore the backup that you previously created
+
+#### Task 4: Managing Containers
+* Use podman to start a mysql container
+* Ensure that this container will store files that are written to /var/lib/mysql persistently to the host directory /srv/mysql
+* Expose the default container port on port 303306 on the localhost
+
+#### Task 5: Using Dockerfile
+* Create a Dockerfile that will start a network scan on the local network using the Lnux command nmap -sn 172.17.0.0/24 (make sure the network IP address matches your current container network IP address)
+* Ensure that this container image is built on minimal RHEL-based container image
+* Also make sure that the container image provides the ip,ps and ping utilities for troubleshooting
+
+#### Task 6: Using CRC
+* Install CRC
+* Start an nginx application that is based on the bitnami/nginx application
+* Use the command line client to verify that the application is running
+
+#### Task 7: Running Applications in OpenShift
+* Create a YAML manifiest file that allows you to run an application with the name newnginx, meeting the following requirements
+  * Use the bitnami/nginx image
+  * Provide access to the application using a route
+* Ensure that a YAML file is created, but no API resource are actually added to the cluster
+
+#### Task 8: Decoupling Information
+* Run a Pod that offers mysql services, meeting the following requirements
+  * Use a mysql image
+  * Make sure that the /var/lib/mysql directory in the container is mounted on a Persisten Volume Claim
+  * Provide variables that are required to start the application in an efficient way
+
+#### Task 9: Using S2I
+* Using your own GitHub account, create a Github repo with the name task9
+* In this repo, copy (not fork) the contents of https://github.com/sandervanvugt/simpleapp
+* Use Source2Image to run this application in OpenShift
+
+#### Task 10: Troubleshooting
+* Run an application in OpenShift that mets the following requirements
+  * Use the busybox image
+  * Give it the name lab10busy
+* Use the appropriate tools to analyze why the application is not starting
+* Fix in such a way that the application can be started
+
